@@ -13,8 +13,8 @@ const client = new Client({
 // Welcome channel
 const WELCOME_CHANNEL = "1446428371595821167";
 
-// Real VC invite link
-const VC_INVITE_LINK = "https://discord.gg/AV58C6AwT";
+// Real VC link
+const VC_LINK = "https://discord.com/channels/1446420100151382131/1447154911627186206";
 
 // Roles
 const PURPLE_ROLE = "1448654794259435614";
@@ -28,32 +28,42 @@ client.once("ready", () => {
     console.log("Wockhardt Welcome Bot is online!");
 });
 
-// =============================
-//          REAL WELCOME
-// =============================
+// =============================================
+//               REAL WELCOME
+// =============================================
 client.on("guildMemberAdd", async (member) => {
 
+    // Random pick
     const choices = ["purple", "red"];
     const pick = choices[Math.floor(Math.random() * choices.length)];
 
-    let color = "";
+    let role = "";
     let video = "";
-    let roleID = "";
+    let color = "";
 
     if (pick === "purple") {
-        color = "#9b59b6";
+        role = PURPLE_ROLE;
         video = PURPLE_VIDEO;
-        roleID = PURPLE_ROLE;
+        color = "#9b59b6";
     } else {
-        color = "#ff003c";
+        role = RED_ROLE;
         video = RED_VIDEO;
-        roleID = RED_ROLE;
+        color = "#ff003c";
     }
 
-    if (roleID) member.roles.add(roleID).catch(() => {});
+    // Assign chosen role
+    member.roles.add(role).catch(() => {});
 
+    // Get channel
+    const channel = member.guild.channels.cache.get(WELCOME_CHANNEL);
+    if (!channel) return;
+
+    // Send video as a separate message (so Discord shows preview)
+    await channel.send(video);
+
+    // Build embed
     const embed = new EmbedBuilder()
-        .setTitle("𐌕𐌕・𝐖𝐎𝐂𝐊𝐇𝐀𝐑𝐃𝐓")
+        .setTitle("𐌕𐌕・𝙒 𝙊 𝘾 𝙆 𝙃 𝘼 𝙍 𝘿 𝙏")
         .setDescription(
 `✦ Welcome to the Wock Zone, ${member} ✦
 
@@ -61,38 +71,37 @@ client.on("guildMemberAdd", async (member) => {
 • Stay active — don’t be dry  
 
 • Your personal VC:  
-→ ${VC_INVITE_LINK}
-
-• Intro Video:  
-→ ${video}
+→ ${VC_LINK}
 `
         )
         .setColor(color)
         .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
         .setTimestamp();
 
-    const channel = member.guild.channels.cache.get(WELCOME_CHANNEL);
-    if (channel) channel.send({ embeds: [embed] });
+    await channel.send({ embeds: [embed] });
 });
 
-// =============================
-//         TEST COMMANDS
-// =============================
+// =============================================
+//                TEST COMMANDS
+// =============================================
 client.on("messageCreate", async (msg) => {
     if (!msg.guild) return;
     if (msg.author.bot) return;
 
-    // only allow YOU to test
-    const OWNER_ID = msg.guild.ownerId;
-    if (msg.author.id !== OWNER_ID) return;
+    const OWNER = msg.guild.ownerId;
+    if (msg.author.id !== OWNER) return;
+
+    const channel = msg.channel;
 
     // TEST PURPLE
     if (msg.content.toLowerCase() === "!testpurple") {
 
         msg.member.roles.add(PURPLE_ROLE).catch(() => {});
 
+        await channel.send(PURPLE_VIDEO);
+
         const embed = new EmbedBuilder()
-            .setTitle("𐌕𐌕・𝐖𝐎𝐂𝐊𝐇𝐀𝐑𝐃𝐓 — TEST (PURPLE)")
+            .setTitle("𐌕𐌕・𝙒 𝙊 𝘾 𝙆 𝙃 𝘼 𝙍 𝘿 𝙏 — TEST (PURPLE)")
             .setDescription(
 `✦ Welcome to the Wock Zone ✦
 
@@ -100,17 +109,14 @@ client.on("messageCreate", async (msg) => {
 • Stay active — don’t be dry  
 
 • Your personal VC:  
-→ ${VC_INVITE_LINK}
-
-• Intro Video:  
-→ ${PURPLE_VIDEO}
+→ ${VC_LINK}
 `
             )
             .setColor("#9b59b6")
             .setThumbnail(msg.author.displayAvatarURL({ dynamic: true }))
             .setTimestamp();
 
-        msg.channel.send({ embeds: [embed] });
+        await channel.send({ embeds: [embed] });
     }
 
     // TEST RED
@@ -118,8 +124,10 @@ client.on("messageCreate", async (msg) => {
 
         msg.member.roles.add(RED_ROLE).catch(() => {});
 
+        await channel.send(RED_VIDEO);
+
         const embed = new EmbedBuilder()
-            .setTitle("𐌕𐌕・𝐖𝐎𝐂𝐊𝐇𝐀𝐑𝐃𝐓 — TEST (RED)")
+            .setTitle("𐌕𐌕・𝙒 𝙊 𝘾 𝙆 𝙃 𝘼 𝙍 𝘿 𝙏 — TEST (RED)")
             .setDescription(
 `✦ Welcome to the Wock Zone ✦
 
@@ -127,17 +135,14 @@ client.on("messageCreate", async (msg) => {
 • Stay active — don’t be dry  
 
 • Your personal VC:  
-→ ${VC_INVITE_LINK}
-
-• Intro Video:  
-→ ${RED_VIDEO}
+→ ${VC_LINK}
 `
             )
             .setColor("#ff003c")
             .setThumbnail(msg.author.displayAvatarURL({ dynamic: true }))
             .setTimestamp();
 
-        msg.channel.send({ embeds: [embed] });
+        await channel.send({ embeds: [embed] });
     }
 });
 
