@@ -9,21 +9,23 @@ const client = new Client({
 });
 
 // Put the channel ID where the welcome message should be sent
-const WELCOME_CHANNEL = "1444628371595821167";
+const WELCOME_CHANNEL = "1446428371595821167";
 
 client.on("guildMemberAdd", async (member) => {
-    const embed = new EmbedBuilder()
-        .setTitle("✨ WOCKHARDT ✨")
-        .setDescription(`
-• Welcome to the Wock Zone, ${member} ✨
 
-• 18+ only • stay active, don’t be dry  
+    const embed = new EmbedBuilder()
+        .setTitle("💟 WOCKHARDT 💟")
+        .setDescription(
+`✨ Welcome to the Wock Zone, ${member} ✨
+
+• 18+ only – stay active, don’t be dry  
 • Need a VC? Tap below:  
-[Create Your VC](https://discord.com/channels/14446220100151382131/1447154911627186206)
+Create Your VC: https://discord.com/channels/1446420100151382131/1447154911627186206
 
 • Intro Video:  
-[🎥 Wockhardt Video](https://discord.com/channels/14446220100151382131/1448457035798930325574/1448457035798930325574)
-        `)
+Wockhardt Video: https://discord.com/channels/1446420100151382131/1447035798930325574/144845260
+`
+        )
         .setColor("#9b59b6")
         .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
         .setTimestamp();
