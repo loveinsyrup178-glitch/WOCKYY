@@ -1,4 +1,12 @@
-const { Client, GatewayIntentBits, EmbedBuilder, Partials } = require("discord.js");
+const { 
+    Client, 
+    GatewayIntentBits, 
+    EmbedBuilder, 
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    Partials 
+} = require("discord.js");
 
 const client = new Client({
     intents: [
@@ -13,44 +21,40 @@ const client = new Client({
 // Welcome channel
 const WELCOME_CHANNEL = "1446428371595821167";
 
-// Real VC link
+// Real VC link + Create VC link (replace if needed)
 const VC_LINK = "https://discord.com/channels/1446420100151382131/1447154911627186206";
+const CREATE_VC_LINK = "https://discord.com/channels/1446420100151382131/1447035798930325574";
 
 // Roles
 const PURPLE_ROLE = "1448654794259435614";
 const RED_ROLE = "1448654699187277875";
 
 // GIFs (inside embed)
-const PURPLE_GIF = "https://cdn.discordapp.com/attachments/1447035798930325574/1448660205079498772/2604FF98-090D-4614-8C4B-E3800DE7278D.gif?ex=693c1173&is=693abff3&hm=b38667b8f6a7227d2857af539906b8b9dc90df9e63bd964f99abb7a11726da2d&";
-const RED_GIF = "https://cdn.discordapp.com/attachments/1447035798930325574/1448661497713790998/C933D366-8D32-4C95-B492-C791CC70E9DF.gif?ex=693c12a7&is=693ac127&hm=8d9631e57d3fbbab12cd59be33f8d7a75dd413c203429c46d653df62c3f10834&";
+const PURPLE_GIF = "https://cdn.discordapp.com/attachments/1447035798930325574/1448660205079498772/2604FF98-090D-4614-8C4B-E3800DE7278D.gif";
+const RED_GIF = "https://cdn.discordapp.com/attachments/1447035798930325574/1448661497713790998/C933D366-8D32-4C95-B492-C791CC70E9DF.gif";
 
 client.once("ready", () => {
     console.log("Wockhardt Welcome Bot is online!");
 });
 
-// =============================================
-//               REAL WELCOME
-// =============================================
+// =========================================================
+//                    REAL WELCOME
+// =========================================================
 client.on("guildMemberAdd", async (member) => {
 
-    const choices = ["purple", "red"];
-    const pick = choices[Math.floor(Math.random() * choices.length)];
+    const picks = ["purple", "red"];
+    const pick = picks[Math.floor(Math.random() * picks.length)];
 
-    let role = "";
-    let color = "";
-    let gif = "";
-    let separator = "";
+    let role, color, gif;
 
     if (pick === "purple") {
         role = PURPLE_ROLE;
         color = "#9b59b6";
         gif = PURPLE_GIF;
-        separator = "𐌕 ✦ ┈ ┉ ┈ ✦ ┈ ┉ ┈ ✦ 𐌕";
     } else {
         role = RED_ROLE;
         color = "#ff003c";
         gif = RED_GIF;
-        separator = "𐌕━━┅━┄━━┅━━┄━┅━━━𐌕";
     }
 
     member.roles.add(role).catch(() => {});
@@ -58,33 +62,37 @@ client.on("guildMemberAdd", async (member) => {
     const channel = member.guild.channels.cache.get(WELCOME_CHANNEL);
     if (!channel) return;
 
-    // Build Extreme Deluxe embed
+    // Create button row
+    const buttons = new ActionRowBuilder()
+        .addComponents(
+            new ButtonBuilder()
+                .setLabel("JOIN VC")
+                .setStyle(ButtonStyle.Link)
+                .setURL(VC_LINK),
+            new ButtonBuilder()
+                .setLabel("CREATE VC")
+                .setStyle(ButtonStyle.Link)
+                .setURL(CREATE_VC_LINK)
+        );
+
     const embed = new EmbedBuilder()
         .setTitle("𐌕𐌕・𝙒 𝙊 𝘾 𝙆 𝙃 𝘼 𝙍 𝘿 𝙏")
         .setDescription(
-`✦ welcome to the wock zone, ${member} ✦
+`welcome to wockhardt, ${member}
 
-• 18+ only  
-      • stay active  
-            • don’t be dry  
-
-${separator}
-
-• your personal vc  
-        → ${VC_LINK}
-`
+inv 3 for perms • stay active`
         )
         .setColor(color)
-        .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
         .setImage(gif)
-        .setTimestamp();
+        .setTimestamp()
+        .setThumbnail(member.user.displayAvatarURL({ dynamic: true }));
 
-    await channel.send({ embeds: [embed] });
+    await channel.send({ embeds: [embed], components: [buttons] });
 });
 
-// =============================================
-//                TEST COMMANDS
-// =============================================
+// =========================================================
+//                  TEST COMMANDS
+// =========================================================
 client.on("messageCreate", async (msg) => {
     if (!msg.guild) return;
     if (msg.author.bot) return;
@@ -94,58 +102,39 @@ client.on("messageCreate", async (msg) => {
 
     const channel = msg.channel;
 
-    // TEST PURPLE
-    if (msg.content.toLowerCase() === "!testpurple") {
-        msg.member.roles.add(PURPLE_ROLE).catch(() => {});
-
-        const embed = new EmbedBuilder()
-            .setTitle("𐌕𐌕・𝙒 𝙊 𝘾 𝙆 𝙃 𝘼 𝙍 𝘿 𝙏 — TEST (PURPLE)")
+    const makeEmbed = (color, gif) =>
+        new EmbedBuilder()
+            .setTitle("𐌕𐌕・𝙒 𝙊 𝘾 𝙆 𝙃 𝘼 𝙍 𝘿 𝙏 — TEST")
             .setDescription(
-`✦ welcome ✦
+`welcome to wockhardt, ${msg.author}
 
-• 18+ only  
-      • stay active  
-            • don’t be dry  
-
-𐌕 ✦ ┈ ┉ ┈ ✦ ┈ ┉ ┈ ✦ 𐌕
-
-• your personal vc  
-        → ${VC_LINK}
-`
+inv 3 for perms • stay active`
             )
-            .setColor("#9b59b6")
-            .setThumbnail(msg.author.displayAvatarURL({ dynamic: true }))
-            .setImage(PURPLE_GIF)
-            .setTimestamp();
+            .setColor(color)
+            .setImage(gif)
+            .setTimestamp()
+            .setThumbnail(msg.author.displayAvatarURL({ dynamic: true }));
 
-        await channel.send({ embeds: [embed] });
+    const buttons = new ActionRowBuilder()
+        .addComponents(
+            new ButtonBuilder()
+                .setLabel("JOIN VC")
+                .setStyle(ButtonStyle.Link)
+                .setURL(VC_LINK),
+            new ButtonBuilder()
+                .setLabel("CREATE VC")
+                .setStyle(ButtonStyle.Link)
+                .setURL(CREATE_VC_LINK)
+        );
+
+    if (msg.content === "!testpurple") {
+        msg.member.roles.add(PURPLE_ROLE).catch(() => {});
+        await channel.send({ embeds: [makeEmbed("#9b59b6", PURPLE_GIF)], components: [buttons] });
     }
 
-    // TEST RED
-    if (msg.content.toLowerCase() === "!testred") {
+    if (msg.content === "!testred") {
         msg.member.roles.add(RED_ROLE).catch(() => {});
-
-        const embed = new EmbedBuilder()
-            .setTitle("𐌕𐌕・𝙒 𝙊 𝘾 𝙆 𝙃 𝘼 𝙍 𝘿 𝙏 — TEST (RED)")
-            .setDescription(
-`✦ welcome ✦
-
-• 18+ only  
-      • stay active  
-            • don’t be dry  
-
-𐌕━━┅━┄━━┅━━┄━┅━━━𐌕
-
-• your personal vc  
-        → ${VC_LINK}
-`
-            )
-            .setColor("#ff003c")
-            .setThumbnail(msg.author.displayAvatarURL({ dynamic: true }))
-            .setImage(RED_GIF)
-            .setTimestamp();
-
-        await channel.send({ embeds: [embed] });
+        await channel.send({ embeds: [makeEmbed("#ff003c", RED_GIF)], components: [buttons] });
     }
 });
 
