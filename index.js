@@ -20,7 +20,7 @@ const VC_LINK = "https://discord.com/channels/1446420100151382131/14471549116271
 const PURPLE_ROLE = "1448654794259435614";
 const RED_ROLE = "1448654699187277875";
 
-// GIFs
+// GIFs (inside embed)
 const PURPLE_GIF = "https://cdn.discordapp.com/attachments/1447035798930325574/1448660205079498772/2604FF98-090D-4614-8C4B-E3800DE7278D.gif?ex=693c1173&is=693abff3&hm=b38667b8f6a7227d2857af539906b8b9dc90df9e63bd964f99abb7a11726da2d&";
 const RED_GIF = "https://cdn.discordapp.com/attachments/1447035798930325574/1448661497713790998/C933D366-8D32-4C95-B492-C791CC70E9DF.gif?ex=693c12a7&is=693ac127&hm=8d9631e57d3fbbab12cd59be33f8d7a75dd413c203429c46d653df62c3f10834&";
 
@@ -37,17 +37,20 @@ client.on("guildMemberAdd", async (member) => {
     const pick = choices[Math.floor(Math.random() * choices.length)];
 
     let role = "";
-    let gif = "";
     let color = "";
+    let gif = "";
+    let separator = "";
 
     if (pick === "purple") {
         role = PURPLE_ROLE;
-        gif = PURPLE_GIF;
         color = "#9b59b6";
+        gif = PURPLE_GIF;
+        separator = "𐌕 ✦ ┈ ┉ ┈ ✦ ┈ ┉ ┈ ✦ 𐌕";
     } else {
         role = RED_ROLE;
-        gif = RED_GIF;
         color = "#ff003c";
+        gif = RED_GIF;
+        separator = "𐌕━━┅━┄━━┅━━┄━┅━━━𐌕";
     }
 
     member.roles.add(role).catch(() => {});
@@ -55,27 +58,25 @@ client.on("guildMemberAdd", async (member) => {
     const channel = member.guild.channels.cache.get(WELCOME_CHANNEL);
     if (!channel) return;
 
-    // Send animated GIF
-    await channel.send(gif);
-
-    // Cascading dimensional embed
+    // Build Extreme Deluxe embed
     const embed = new EmbedBuilder()
         .setTitle("𐌕𐌕・𝙒 𝙊 𝘾 𝙆 𝙃 𝘼 𝙍 𝘿 𝙏")
         .setDescription(
-`✦ Welcome to the Wock Zone, ${member} ✦
+`✦ welcome to the wock zone, ${member} ✦
 
 • 18+ only  
-    • stay active  
-        • don’t be dry  
+      • stay active  
+            • don’t be dry  
 
-𐌕···· ··· ··· ·· · ·····𐌕
+${separator}
 
-• Your personal VC  
-      → ${VC_LINK}
+• your personal vc  
+        → ${VC_LINK}
 `
         )
         .setColor(color)
         .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
+        .setImage(gif)
         .setTimestamp();
 
     await channel.send({ embeds: [embed] });
@@ -95,28 +96,26 @@ client.on("messageCreate", async (msg) => {
 
     // TEST PURPLE
     if (msg.content.toLowerCase() === "!testpurple") {
-
         msg.member.roles.add(PURPLE_ROLE).catch(() => {});
-
-        await channel.send(PURPLE_GIF);
 
         const embed = new EmbedBuilder()
             .setTitle("𐌕𐌕・𝙒 𝙊 𝘾 𝙆 𝙃 𝘼 𝙍 𝘿 𝙏 — TEST (PURPLE)")
             .setDescription(
-`✦ Welcome to the Wock Zone ✦
+`✦ welcome ✦
 
 • 18+ only  
-    • stay active  
-        • don’t be dry  
+      • stay active  
+            • don’t be dry  
 
-𐌕···· ··· ··· ·· · ·····𐌕
+𐌕 ✦ ┈ ┉ ┈ ✦ ┈ ┉ ┈ ✦ 𐌕
 
-• Your personal VC  
-      → ${VC_LINK}
+• your personal vc  
+        → ${VC_LINK}
 `
             )
             .setColor("#9b59b6")
             .setThumbnail(msg.author.displayAvatarURL({ dynamic: true }))
+            .setImage(PURPLE_GIF)
             .setTimestamp();
 
         await channel.send({ embeds: [embed] });
@@ -124,28 +123,26 @@ client.on("messageCreate", async (msg) => {
 
     // TEST RED
     if (msg.content.toLowerCase() === "!testred") {
-
         msg.member.roles.add(RED_ROLE).catch(() => {});
-
-        await channel.send(RED_GIF);
 
         const embed = new EmbedBuilder()
             .setTitle("𐌕𐌕・𝙒 𝙊 𝘾 𝙆 𝙃 𝘼 𝙍 𝘿 𝙏 — TEST (RED)")
             .setDescription(
-`✦ Welcome to the Wock Zone ✦
+`✦ welcome ✦
 
 • 18+ only  
-    • stay active  
-        • don’t be dry  
+      • stay active  
+            • don’t be dry  
 
-𐌕···· ··· ··· ·· · ·····𐌕
+𐌕━━┅━┄━━┅━━┄━┅━━━𐌕
 
-• Your personal VC  
-      → ${VC_LINK}
+• your personal vc  
+        → ${VC_LINK}
 `
             )
             .setColor("#ff003c")
             .setThumbnail(msg.author.displayAvatarURL({ dynamic: true }))
+            .setImage(RED_GIF)
             .setTimestamp();
 
         await channel.send({ embeds: [embed] });
