@@ -8,6 +8,11 @@ const client = new Client({
     partials: [Partials.GuildMember]
 });
 
+// Log when bot is ready
+client.once("ready", () => {
+    console.log("Wockhardt Welcome Bot is online!");
+});
+
 // Put the channel ID where the welcome message should be sent
 const WELCOME_CHANNEL = "1446428371595821167";
 
