@@ -28,32 +28,30 @@ const MAIN_CHAT_LINK = "https://discord.com/channels/1446420100151382131/1446428
 const PURPLE_ROLE = "1448654794259435614";
 const RED_ROLE = "1448654699187277875";
 
-// GIFS
+// CLEAN GIF LINKS
 const PURPLE_GIF = "https://cdn.discordapp.com/attachments/1447035798930325574/1448678742225326221/1B071050-EBBC-499A-9766-0B1B8EA76E04.gif";
 const RED_GIF = "https://cdn.discordapp.com/attachments/1447035798930325574/1448684013458817117/705C1CE2-E35E-4FC5-9DFC-0F9B05CB1F52.gif";
 
-// FUNCTION THAT BUILDS THE EMBED
+// EMBED BUILDER FUNCTION (no visible link)
 function buildWelcomeEmbed(member, role, gif) {
     const color = role === PURPLE_ROLE ? "#8A2BE2" : "#B00000";
 
     return new EmbedBuilder()
         .setTitle("𝘞𝘖𝘊𝘒𝘏𝘈𝘙𝘋𝘛 𝘞𝘌𝘓𝘊𝘖𝘔𝘌 ✦")
         .setDescription(
-`𝘞𝘦𝘭𝘤𝘰𝘮𝘦 𝘵𝘰 𝘵𝘩𝘦 𝘞𝘰𝘤𝘬 𝘡𝘰𝘯𝘦, ${member}  
+`𝘞𝘦𝘭𝘤𝘰𝘮𝘦 𝘵𝘰 𝘵𝘩𝘦 𝘞𝘰𝘤𝘬 𝘡𝘰𝘯𝘦, ${member}
 
 ✦ 𝘴𝘵𝘢𝘺 𝘢𝘤𝘵𝘪𝘷𝘦  
 ✦ 𝘪𝘯𝘷 𝟯 𝘧𝘰𝘳 𝘱𝘦𝘳𝘮𝘴  
-✦ 𝘧𝘦𝘦𝘭 𝘢𝘵 𝘩𝘰𝘮𝘦  
-
-[ ](${gif})`
+✦ 𝘧𝘦𝘦𝘭 𝘢𝘵 𝘩𝘰𝘮𝘦`
         )
-        .setImage(gif)
+        .setImage(gif) // GIF shows clean, no link text
         .setColor(color)
         .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
         .setTimestamp();
 }
 
-// BUTTONS
+// BUTTONS ROW
 function buildButtons() {
     return new ActionRowBuilder().addComponents(
         new ButtonBuilder()
@@ -73,7 +71,6 @@ client.on("guildMemberAdd", async (member) => {
     const selected = roles[Math.floor(Math.random() * roles.length)];
 
     const gif = selected === PURPLE_ROLE ? PURPLE_GIF : RED_GIF;
-
     const embed = buildWelcomeEmbed(member, selected, gif);
     const buttons = buildButtons();
 
@@ -127,7 +124,6 @@ client.on("interactionCreate", async (interaction) => {
         gif = RED_GIF;
     }
 
-    // assign role for testing too
     await member.roles.add(role).catch(() => {});
 
     const embed = buildWelcomeEmbed(member, role, gif);
