@@ -20,9 +20,9 @@ const VC_LINK = "https://discord.com/channels/1446420100151382131/14471549116271
 const PURPLE_ROLE = "1448654794259435614";
 const RED_ROLE = "1448654699187277875";
 
-// Videos
-const PURPLE_VIDEO = "https://youtu.be/vXvqB2AiAio?si=jgnFkcsP4xx4PcOP";
-const RED_VIDEO = "https://youtu.be/NLhfOd1QmWs?si=vFr0jJsfBq_fIRVJ";
+// GIFs
+const PURPLE_GIF = "https://cdn.discordapp.com/attachments/1447035798930325574/1448660205079498772/2604FF98-090D-4614-8C4B-E3800DE7278D.gif?ex=693c1173&is=693abff3&hm=b38667b8f6a7227d2857af539906b8b9dc90df9e63bd964f99abb7a11726da2d&";
+const RED_GIF = "https://cdn.discordapp.com/attachments/1447035798930325574/1448661497713790998/C933D366-8D32-4C95-B492-C791CC70E9DF.gif?ex=693c12a7&is=693ac127&hm=8d9631e57d3fbbab12cd59be33f8d7a75dd413c203429c46d653df62c3f10834&";
 
 client.once("ready", () => {
     console.log("Wockhardt Welcome Bot is online!");
@@ -33,45 +33,45 @@ client.once("ready", () => {
 // =============================================
 client.on("guildMemberAdd", async (member) => {
 
-    // Random pick
     const choices = ["purple", "red"];
     const pick = choices[Math.floor(Math.random() * choices.length)];
 
     let role = "";
-    let video = "";
+    let gif = "";
     let color = "";
 
     if (pick === "purple") {
         role = PURPLE_ROLE;
-        video = PURPLE_VIDEO;
+        gif = PURPLE_GIF;
         color = "#9b59b6";
     } else {
         role = RED_ROLE;
-        video = RED_VIDEO;
+        gif = RED_GIF;
         color = "#ff003c";
     }
 
-    // Assign chosen role
     member.roles.add(role).catch(() => {});
 
-    // Get channel
     const channel = member.guild.channels.cache.get(WELCOME_CHANNEL);
     if (!channel) return;
 
-    // Send video as a separate message (so Discord shows preview)
-    await channel.send(video);
+    // Send animated GIF
+    await channel.send(gif);
 
-    // Build embed
+    // Cascading dimensional embed
     const embed = new EmbedBuilder()
         .setTitle("𐌕𐌕・𝙒 𝙊 𝘾 𝙆 𝙃 𝘼 𝙍 𝘿 𝙏")
         .setDescription(
 `✦ Welcome to the Wock Zone, ${member} ✦
 
 • 18+ only  
-• Stay active — don’t be dry  
+    • stay active  
+        • don’t be dry  
 
-• Your personal VC:  
-→ ${VC_LINK}
+𐌕···· ··· ··· ·· · ·····𐌕
+
+• Your personal VC  
+      → ${VC_LINK}
 `
         )
         .setColor(color)
@@ -98,7 +98,7 @@ client.on("messageCreate", async (msg) => {
 
         msg.member.roles.add(PURPLE_ROLE).catch(() => {});
 
-        await channel.send(PURPLE_VIDEO);
+        await channel.send(PURPLE_GIF);
 
         const embed = new EmbedBuilder()
             .setTitle("𐌕𐌕・𝙒 𝙊 𝘾 𝙆 𝙃 𝘼 𝙍 𝘿 𝙏 — TEST (PURPLE)")
@@ -106,10 +106,13 @@ client.on("messageCreate", async (msg) => {
 `✦ Welcome to the Wock Zone ✦
 
 • 18+ only  
-• Stay active — don’t be dry  
+    • stay active  
+        • don’t be dry  
 
-• Your personal VC:  
-→ ${VC_LINK}
+𐌕···· ··· ··· ·· · ·····𐌕
+
+• Your personal VC  
+      → ${VC_LINK}
 `
             )
             .setColor("#9b59b6")
@@ -124,7 +127,7 @@ client.on("messageCreate", async (msg) => {
 
         msg.member.roles.add(RED_ROLE).catch(() => {});
 
-        await channel.send(RED_VIDEO);
+        await channel.send(RED_GIF);
 
         const embed = new EmbedBuilder()
             .setTitle("𐌕𐌕・𝙒 𝙊 𝘾 𝙆 𝙃 𝘼 𝙍 𝘿 𝙏 — TEST (RED)")
@@ -132,10 +135,13 @@ client.on("messageCreate", async (msg) => {
 `✦ Welcome to the Wock Zone ✦
 
 • 18+ only  
-• Stay active — don’t be dry  
+    • stay active  
+        • don’t be dry  
 
-• Your personal VC:  
-→ ${VC_LINK}
+𐌕···· ··· ··· ·· · ·····𐌕
+
+• Your personal VC  
+      → ${VC_LINK}
 `
             )
             .setColor("#ff003c")
