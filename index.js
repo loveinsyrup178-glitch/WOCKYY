@@ -65,7 +65,6 @@ return new EmbedBuilder()
 .setDescription(
 '**Welcome, sipper.**\n' +
 'Tap the lean cup below to verify & unlock the rest of the server.
-)
 .setImage(VERIFY_IMG)
 .setFooter({ text: 'Verification required • WOCKHARDT' });
 }
