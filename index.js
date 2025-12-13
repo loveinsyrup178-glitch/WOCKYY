@@ -81,8 +81,7 @@ return new EmbedBuilder()
 .setTitle('⛧ WOCKHARDT ・ Verification ⛧')
 .setDescription(
 `**Welcome, sipper.**\n` +
-`Tap the lean cup below to verify & unlock the rest of the server.\n\n` +
-`<:whitelean:1376495549179756607> ・ <a:purplewaves:1234567890123456789>`
+`Tap the lean cup below to verify & unlock the rest of the server.`
 )
 .setImage(VERIFY_IMG)
 .setFooter({ text: 'Verification required • WOCKHARDT' });
