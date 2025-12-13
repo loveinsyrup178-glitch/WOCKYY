@@ -45,12 +45,11 @@ const VERIFY_IMG = 'https://cdn.discordapp.com/attachments/1447035798930325574/1
 function buildWelcomeEmbed(member, role, gif) {
 const color = role === PURPLE_ROLE ? '#8A2BE2' : '#B00000';
 return new EmbedBuilder()
-.setTitle('𝘞𝘖𝘊𝘒𝘏𝘈𝘙𝘋𝘛 𝘞𝘌𝘓𝘊𝘖𝘔𝘌 ✦')
+.setTitle('𐌕𐌕・𝐖𝐎𝐂𝐊𝐇𝐀𝐑𝐃𝐓 𝘞𝘌𝘓𝘊𝘖𝘔𝘌 ✦')
 .setDescription(
 `𝘞𝘦𝘭𝘤𝘰𝘮𝘦 𝘵𝘰 𝘵𝘩𝘦 𝘞𝘰𝘤𝘬 𝘡𝘰𝘯𝘦, ${member}\n\n` +
 '✦ 𝘴𝘵𝘢𝘺 𝘢𝘤𝘵𝘪𝘷𝘦 \n' +
 '✦ 𝘪𝘯𝘷 𝟯 𝘧𝘰𝘳 𝘱𝘦𝘳𝘮𝘴 \n' +
-'✦ 𝘧𝘦𝘦𝘭 𝘢𝘵 𝘩𝘰𝘮𝘦'
 )
 .setImage(gif)
 .setColor(color)
@@ -61,11 +60,10 @@ return new EmbedBuilder()
 function buildVerifyEmbed() {
 return new EmbedBuilder()
 .setColor(0x8b00ff)
-.setTitle('⛧ WOCKHARDT ・ Verification ⛧')
+.setTitle('⛧ 𐌕𐌕・𝐖𝐎𝐂𝐊𝐇𝐀𝐑𝐃𝐓 ・ Verification ⛧')
 .setDescription(
 '**Welcome, sipper.**\n' +
-'Tap the lean cup below to verify & unlock the rest of the server.\n\n' +
-'<:whitelean:1376495549179756607> ・ <a:purplewaves:1234567890123456789>'
+'Tap the lean cup below to verify & unlock the rest of the server.'
 )
 .setImage(VERIFY_IMG)
 .setFooter({ text: 'Verification required • WOCKHARDT' });
