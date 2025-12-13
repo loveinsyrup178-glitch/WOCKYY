@@ -144,7 +144,7 @@ client.on('messageCreate', async msg => {
   try {
     await member.roles.add(role);
     await member.setNickname(`⟦𝙬𝙤𝙘𝙠⟧ <:whitelean:1376495549179756607> ${member.user.username}`);
-    msg.reply('Wock tag applied 🥤');
+msg.reply(`Wock tag applied 🥤  **${member.displayName}**`);
   } catch (err) {
     // ⬇️  REAL reason printed
     console.error('[,wock error]', err);
