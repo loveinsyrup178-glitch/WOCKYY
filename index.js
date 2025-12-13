@@ -50,6 +50,7 @@ return new EmbedBuilder()
 `𝘞𝘦𝘭𝘤𝘰𝘮𝘦 𝘵𝘰 𝘵𝘩𝘦 𝘞𝘰𝘤𝘬 𝘡𝘰𝘯𝘦, ${member}\n\n` +
 '✦ 𝘴𝘵𝘢𝘺 𝘢𝘤𝘵𝘪𝘷𝘦 \n' +
 '✦ 𝘪𝘯𝘷 𝟯 𝘧𝘰𝘳 𝘱𝘦𝘳𝘮𝘴 \n' +
+'✦ 𝘧𝘦𝘦𝘭 𝘢𝘵 𝘩𝘰𝘮𝘦'
 )
 .setImage(gif)
 .setColor(color)
@@ -63,7 +64,7 @@ return new EmbedBuilder()
 .setTitle('⛧ 𐌕𐌕・𝐖𝐎𝐂𝐊𝐇𝐀𝐑𝐃𝐓 ・ Verification ⛧')
 .setDescription(
 '**Welcome, sipper.**\n' +
-'Tap the lean cup below to verify & unlock the rest of the server.'
+'Tap the lean cup below to verify & unlock the rest of the server.\n\n' +
 )
 .setImage(VERIFY_IMG)
 .setFooter({ text: 'Verification required • WOCKHARDT' });
@@ -191,3 +192,4 @@ return i.reply({ content: '✅ Verified—welcome to WOCKHARDT!', ephemeral: tru
 
 /* ---------- LOGIN ---------- */
 client.login(process.env.TOKEN);
+
