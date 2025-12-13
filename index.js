@@ -1,5 +1,5 @@
 /* WOCKHARDT-BOT – merged 2025-12
-All-in-one: welcome embeds, verification, 24/7 VC, /wock role+nick
+All-in-one: welcome embeds, verification, 24/7 VC, ,wock role+nick (prefix ,)
 */
 require('dotenv').config();
 const {
@@ -20,7 +20,9 @@ const client = new Client({
 intents: [
 GatewayIntentBits.Guilds,
 GatewayIntentBits.GuildMembers,
-GatewayIntentBits.GuildVoiceStates
+GatewayIntentBits.GuildVoiceStates,
+GatewayIntentBits.GuildMessages,
+GatewayIntentBits.MessageContent
 ],
 partials: [Partials.GuildMember]
 });
@@ -116,19 +118,7 @@ console.log(`WOCKHARDT online as ${client.user.tag}`);
 const guild = client.guilds.cache.first();
 if (guild) joinIdleVC(guild);
 
-/* slash commands */
-const cmds = [
-new SlashCommandBuilder().setName('wock').setDescription('Apply the wock tag'),
-new SlashCommandBuilder().setName('testpurple').setDescription('Send the purple welcome embed'),
-new SlashCommandBuilder().setName('testred').setDescription('Send the red welcome embed'),
-new SlashCommandBuilder().setName('sendverify').setDescription('Post the verification embed (one-time setup)')
-].map(c => c.toJSON());
-
-const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
-await rest.put(Routes.applicationCommands(client.user.id), { body: cmds });
-console.log('Slash commands registered');
-
-/* post verification embed once */
+/* post verification embed once at startup */
 const verifyCh = guild.channels.cache.get(VERIFY_CHANNEL);
 if (verifyCh) {
 const msgs = await verifyCh.messages.fetch({ limit: 1 });
@@ -139,55 +129,38 @@ console.log('✅ Verification embed posted');
 }
 });
 
-/* ---------- INTERACTIONS ---------- */
-client.on('interactionCreate', async i => {
-/* 1) Slash commands */
-if (i.isChatInputCommand()) {
-const member = i.member;
-if (i.commandName === 'wock') {
-const role = i.guild.roles.cache.find(r => r.name === 'wock');
-if (!role) return i.reply({ content: 'Wock role not found.', ephemeral: true });
+/* ---------- ,wock COMMAND ---------- */
+client.on('messageCreate', async msg => {
+if (msg.author.bot) return;
+if (!msg.content.toLowerCase().startsWith(',wock')) return;
+
+const member = msg.member;
+const role = msg.guild.roles.cache.find(r => r.name === 'wock');
+if (!role) return msg.reply('Wock role not found.');
+
 if (member.roles.cache.has(role.id))
-return i.reply({ content: 'You already got the wock 🥤', ephemeral: true });
+return msg.reply('You already got the wock 🥤');
+
 try {
 await member.roles.add(role);
 await member.setNickname(`⟦𝙬𝙤𝙘𝙠⟧ <:whitelean:1376495549179756607> ${member.user.username}`);
-return i.reply({ content: 'Wock tag applied 🥤', ephemeral: true });
+msg.reply('Wock tag applied 🥤');
 } catch {
-return i.reply({ content: 'I need Manage Roles & Manage Nicknames permissions.', ephemeral: true });
+msg.reply('I need Manage Roles & Manage Nicknames permissions.');
 }
-}
+});
 
-const welcomeCh = i.guild.channels.cache.get(WELCOME_CHANNEL);
-if (!welcomeCh) return i.reply({ content: 'Welcome channel missing!', ephemeral: true });
+/* ---------- VERIFICATION BUTTON ---------- */
+client.on('interactionCreate', async i => {
+if (!i.isButton() || i.customId !== 'verify_btn') return;
 
-if (i.commandName === 'testpurple') {
-await member.roles.add(PURPLE_ROLE).catch(() => {});
-welcomeCh.send({ embeds: [buildWelcomeEmbed(member, PURPLE_ROLE, PURPLE_GIF)], components: [buildWelcomeButtons()] });
-return i.reply({ content: 'Sent!', ephemeral: true });
-}
-if (i.commandName === 'testred') {
-await member.roles.add(RED_ROLE).catch(() => {});
-welcomeCh.send({ embeds: [buildWelcomeEmbed(member, RED_ROLE, RED_GIF)], components: [buildWelcomeButtons()] });
-return i.reply({ content: 'Sent!', ephemeral: true });
-}
-if (i.commandName === 'sendverify') {
-const verifyCh = i.guild.channels.cache.get(VERIFY_CHANNEL);
-if (!verifyCh) return i.reply({ content: 'Verification channel missing!', ephemeral: true });
-await verifyCh.send({ embeds: [buildVerifyEmbed()], components: [buildVerifyButton()] });
-return i.reply({ content: 'Verification embed posted!', ephemeral: true });
-}
-}
-
-/* 2) Verification button */
-if (i.isButton() && i.customId === 'verify_btn') {
 const verifiedRole = i.guild.roles.cache.find(r => r.name.toLowerCase() === 'verified');
 if (!verifiedRole) return i.reply({ content: '⚠️ Verified role not found.', ephemeral: true });
 if (i.member.roles.cache.has(verifiedRole.id))
 return i.reply({ content: "You're already verified.", ephemeral: true });
+
 await i.member.roles.add(verifiedRole);
-return i.reply({ content: '✅ Verified—welcome to WOCKHARDT!', ephemeral: true });
-}
+i.reply({ content: '✅ Verified—welcome to WOCKHARDT!', ephemeral: true });
 });
 
 /* ---------- LOGIN ---------- */
