@@ -131,24 +131,27 @@ console.log('✅ Verification embed posted');
 
 /* ---------- ,wock COMMAND ---------- */
 client.on('messageCreate', async msg => {
-if (msg.author.bot) return;
-if (!msg.content.toLowerCase().startsWith(',wock')) return;
+  if (msg.author.bot) return;
+  if (!msg.content.toLowerCase().startsWith(',wock')) return;
 
-const member = msg.member;
-const role = msg.guild.roles.cache.find(r => r.name === 'wock');
-if (!role) return msg.reply('Wock role not found.');
+  const member = msg.member;
+  const role   = msg.guild.roles.cache.find(r => r.name === 'wock');
+  if (!role) return msg.reply('Wock role not found.');
 
-if (member.roles.cache.has(role.id))
-return msg.reply('You already got the wock 🥤');
+  if (member.roles.cache.has(role.id))
+    return msg.reply('You already got the wock 🥤');
 
-try {
-await member.roles.add(role);
-await member.setNickname(`⟦𝙬𝙤𝙘𝙠⟧ <:whitelean:1376495549179756607> ${member.user.username}`);
-msg.reply('Wock tag applied 🥤');
-} catch {
-msg.reply('I need Manage Roles & Manage Nicknames permissions.');
-}
+  try {
+    await member.roles.add(role);
+    await member.setNickname(`⟦𝙬𝙤𝙘𝙠⟧ <:whitelean:1376495549179756607> ${member.user.username}`);
+    msg.reply('Wock tag applied 🥤');
+  } catch (err) {
+    // ⬇️  REAL reason printed
+    console.error('[,wock error]', err);
+    msg.reply(`❌ ${err.message}`);
+  }
 });
+
 
 /* ---------- VERIFICATION BUTTON ---------- */
 client.on('interactionCreate', async i => {
