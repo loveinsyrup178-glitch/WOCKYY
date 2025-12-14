@@ -1,5 +1,5 @@
-/*  WOCKHARDT-BOT v2 – Bleed-style, KEYLESS (no API keys)
-24/7 VC  |  ,wock  |  lots of commands  |  djs v14
+/*  WOCKHARDT-BOT v2 – Bleed-style, KEYLESS + Railway-safe (no FFmpeg required)
+    24/7 VC optional (ENABLE_VOICE=true) | ,wock | djs v14
 */
 
 require("dotenv").config();
@@ -16,14 +16,6 @@ const {
   ChannelType,
 } = require("discord.js");
 
-const {
-  joinVoiceChannel,
-  createAudioPlayer,
-  createAudioResource,
-  NoSubscriberBehavior,
-  AudioPlayerStatus,
-} = require("@discordjs/voice");
-
 const ms = require("ms");
 const fetch = (...args) => import("node-fetch").then(({ default: f }) => f(...args));
 
@@ -33,10 +25,25 @@ const VERIFY_CH = process.env.VERIFY_CH || "1449275035020689458";
 const IDLE_VC_ID = process.env.IDLE_VC_ID || "1447154877150265466";
 const PURPLE_ROLE = process.env.PURPLE_ROLE || "1448654794259435614";
 const RED_ROLE = process.env.RED_ROLE || "1448654699187277875";
-const GUILD_ID = process.env.GUILD_ID;
+const GUILD_ID = process.env.GUILD_ID; // optional but recommended
 const TOKEN = process.env.TOKEN;
 
-if (!TOKEN) throw new Error("Missing TOKEN in .env");
+if (!TOKEN) throw new Error("Missing TOKEN (set it in Railway Variables or .env)");
+
+/* ---------- OPTIONAL VOICE (Railway-safe) ---------- */
+const ENABLE_VOICE = String(process.env.ENABLE_VOICE || "false").toLowerCase() === "true";
+
+// Only require voice if user explicitly enables it.
+// This prevents Railway FFmpeg crashes by default.
+let voice = null;
+if (ENABLE_VOICE) {
+  try {
+    voice = require("@discordjs/voice");
+  } catch (e) {
+    console.warn("⚠️ ENABLE_VOICE=true but @discordjs/voice not available. Voice disabled.");
+    voice = null;
+  }
+}
 
 /* ---------- CLIENT ---------- */
 const client = new Client({
@@ -52,21 +59,28 @@ const client = new Client({
 });
 
 /* ---------- UTILS ---------- */
-const rand = (arr) => arr[Math.floor(Math.random() * arr.length)];
 const PREFIX = ",";
+const rand = (arr) => arr[Math.floor(Math.random() * arr.length)];
+const isMod = (m) => m.member.permissions.has(PermissionsBitField.Flags.ManageMessages);
 
-// put a real silence.mp3 in same folder
-const SILENCE = createAudioResource("./silence.mp3");
-
-function isMod(m) {
-  return m.member.permissions.has(PermissionsBitField.Flags.ManageMessages);
-}
-
-/* ---------- 24/7 VC ---------- */
+/* ---------- 24/7 VC (OPTIONAL) ---------- */
 async function joinIdleVC(guild) {
+  if (!voice) return; // voice disabled
   try {
+    const {
+      joinVoiceChannel,
+      createAudioPlayer,
+      createAudioResource,
+      NoSubscriberBehavior,
+      AudioPlayerStatus,
+    } = voice;
+
     const vc = guild.channels.cache.get(IDLE_VC_ID);
     if (!vc || (vc.type !== ChannelType.GuildVoice && vc.type !== ChannelType.GuildStageVoice)) return;
+
+    // NOTE: this requires ffmpeg if you play audio; on Railway you'll need ffmpeg installed.
+    // If you enable voice on Railway, add ffmpeg via nixpacks.
+    const SILENCE = createAudioResource("./silence.mp3");
 
     const conn = joinVoiceChannel({
       channelId: vc.id,
@@ -85,15 +99,16 @@ async function joinIdleVC(guild) {
 
     player.on(AudioPlayerStatus.Idle, () => player.play(SILENCE));
     player.on("error", () => player.play(SILENCE));
+
+    console.log("🎧 Joined idle VC:", vc.name);
   } catch (e) {
-    console.error("joinIdleVC error:", e);
+    console.warn("⚠️ Voice join failed (likely missing ffmpeg). Disable ENABLE_VOICE or install ffmpeg.", e?.message);
   }
 }
 
 /* ---------- EMBEDS ---------- */
 function buildWelcomeEmbed(member, roleId, gif) {
   const color = roleId === PURPLE_ROLE ? "#8A2BE2" : "#B00000";
-
   return new EmbedBuilder()
     .setTitle("𐌕𐌕・𝐖𝐎𝐂𝐊𝐇𝐀𝐑𝐃𝐓 𝘞𝘌𝘓𝘊𝘖𝘔𝘌 ✦")
     .setDescription(
@@ -131,18 +146,16 @@ const rowVerify = new ActionRowBuilder().addComponents(
     .setStyle(ButtonStyle.Secondary)
 );
 
-/* ---------- CONTENT POOLS ---------- */
+/* ---------- POOLS ---------- */
 const GIFS = [
   "https://i.imgur.com/3X8MPrv.gif",
   "https://i.imgur.com/F3hE9aR.gif",
   "https://i.imgur.com/uS7NPr0.gif",
 ];
-
 const PICKUPS = [
   "Are you a double cup? cos I wanna hold you all night",
   "Is your name Wock? cos I’m tryna pour into you",
 ];
-
 const EIGHT = [
   "Pour up",
   "Pause pour",
@@ -155,7 +168,6 @@ const EIGHT = [
   "Sticky cup maybe",
   "Codeine vibes only",
 ];
-
 const COMPLIMENTS = [
   "looks fire today",
   "has elite cup-holding skills",
@@ -163,17 +175,23 @@ const COMPLIMENTS = [
   "smells like lavender lean",
 ];
 
-const DEATHS = ["from a foam overdose", "spilling the double cup", "drowning in the syrup"];
+/* ---------- CACHES ---------- */
+client.snipe = new Map();
+client.editSnipe = new Map();
+client.afk = new Map();
 
 /* ---------- READY ---------- */
 client.once("ready", async () => {
   console.log(`WOCKHARDT online as ${client.user.tag}`);
+  console.log(`Voice enabled? ${ENABLE_VOICE && !!voice}`);
 
-  const guild = client.guilds.cache.get(GUILD_ID);
+  // Prefer a specific guild if provided; otherwise just skip the auto-post.
+  const guild = GUILD_ID ? client.guilds.cache.get(GUILD_ID) : null;
+
   if (guild) {
-    joinIdleVC(guild);
+    if (ENABLE_VOICE) await joinIdleVC(guild);
 
-    // post verify embed once
+    // Post verify embed once (safe)
     try {
       const vch = guild.channels.cache.get(VERIFY_CH);
       if (vch && vch.isTextBased()) {
@@ -182,12 +200,14 @@ client.once("ready", async () => {
         if (!already) await vch.send({ embeds: [buildVerifyEmbed()], components: [rowVerify] });
       }
     } catch (e) {
-      console.error("verify post error:", e);
+      console.warn("verify post error:", e?.message);
     }
+  } else {
+    console.log("ℹ️ No GUILD_ID set or bot not cached in that guild yet; skipping auto verify post & VC join.");
   }
 });
 
-/* ---------- EVENTS ---------- */
+/* ---------- MEMBER JOIN ---------- */
 client.on("guildMemberAdd", async (m) => {
   const roles = [PURPLE_ROLE, RED_ROLE];
   const pick = roles[Math.floor(Math.random() * roles.length)];
@@ -202,16 +222,11 @@ client.on("guildMemberAdd", async (m) => {
   if (ch && ch.isTextBased()) ch.send({ embeds: [buildWelcomeEmbed(m, pick, gif)], components: [rowLinks] });
 });
 
-/* ---------- SNIPE + AFK CACHE ---------- */
-client.snipe = new Map();
-client.editSnipe = new Map();
-client.afk = new Map();
-
+/* ---------- SNIPE LISTENERS ---------- */
 client.on("messageDelete", (msg) => {
   if (!msg?.author || msg.author.bot) return;
   client.snipe.set(msg.channel.id, { author: msg.author, content: msg.content, createdAt: msg.createdAt });
 });
-
 client.on("messageUpdate", (oldMsg, newMsg) => {
   if (!newMsg?.author || newMsg.author.bot) return;
   client.editSnipe.set(newMsg.channel.id, {
@@ -222,7 +237,7 @@ client.on("messageUpdate", (oldMsg, newMsg) => {
   });
 });
 
-/* ---------- MESSAGE COMMANDS ---------- */
+/* ---------- COMMANDS ---------- */
 client.on("messageCreate", async (m) => {
   if (m.author.bot) return;
   if (!m.content.startsWith(PREFIX)) return;
@@ -230,7 +245,7 @@ client.on("messageCreate", async (m) => {
   const args = m.content.slice(PREFIX.length).trim().split(/\s+/);
   const cmd = (args.shift() || "").toLowerCase();
 
-  /* ---------- CORE ---------- */
+  /* CORE */
   if (cmd === "wock") {
     const role = m.guild.roles.cache.find((r) => r.name.toLowerCase() === "wock");
     if (!role) return m.reply("Wock role not found.");
@@ -249,31 +264,9 @@ client.on("messageCreate", async (m) => {
     return m.channel.send({ embeds: [buildVerifyEmbed()], components: [rowVerify] });
   }
 
-  if (cmd === "help") {
-    return m.reply({
-      embeds: [
-        new EmbedBuilder()
-          .setColor(0x8b00ff)
-          .setTitle("WOCKHARDT COMMANDS (Keyless)")
-          .setDescription(
-            [
-              `**Core:** ${PREFIX}wock ${PREFIX}verify ${PREFIX}count ${PREFIX}leaderboard ${PREFIX}wockstats`,
-              `**Fun:** ${PREFIX}lean ${PREFIX}8cup ${PREFIX}pickup ${PREFIX}iq ${PREFIX}ship ${PREFIX}joke ${PREFIX}meme ${PREFIX}cat ${PREFIX}dog ${PREFIX}coinflip ${PREFIX}roll ${PREFIX}random ${PREFIX}reverse ${PREFIX}mock ${PREFIX}emojify ${PREFIX}drank ${PREFIX}gif`,
-              `**Social:** ${PREFIX}compliment ${PREFIX}insult ${PREFIX}dadjoke ${PREFIX}quote ${PREFIX}fact`,
-              `**Info:** ${PREFIX}serverinfo ${PREFIX}userinfo ${PREFIX}avatar ${PREFIX}servericon ${PREFIX}channelinfo ${PREFIX}emoji`,
-              `**Tools:** ${PREFIX}qr ${PREFIX}shorten ${PREFIX}calc ${PREFIX}binary ${PREFIX}password ${PREFIX}translate ${PREFIX}weather ${PREFIX}minecraft`,
-              `**Voice:** ${PREFIX}doublecup ${PREFIX}randomvc`,
-              `**Mod:** ${PREFIX}clear ${PREFIX}say ${PREFIX}embed ${PREFIX}mute ${PREFIX}unmute ${PREFIX}slowmode ${PREFIX}lock ${PREFIX}unlock`,
-            ].join("\n")
-          ),
-      ],
-    });
-  }
-
-  /* ---------- FUN ---------- */
+  /* FUN */
   if (cmd === "lean") return m.channel.send({ files: [rand(GIFS)] });
   if (cmd === "gif") return m.reply(rand(GIFS)); // keyless fallback
-
   if (cmd === "8cup") return m.reply(`🎱 **${rand(EIGHT)}**`);
   if (cmd === "pickup") return m.reply(rand(PICKUPS));
 
@@ -295,14 +288,6 @@ client.on("messageCreate", async (m) => {
   if (cmd === "roll") {
     const n = Math.max(2, Math.min(parseInt(args[0] || "6", 10), 1000000));
     return m.reply(`🎲 **${Math.floor(Math.random() * n) + 1}** (1-${n})`);
-  }
-
-  if (cmd === "random") {
-    const role = m.mentions.roles.first();
-    if (!role) return m.reply("mention a role");
-    const u = role.members.random();
-    if (!u) return m.reply("no members in that role");
-    return m.reply(`Random pick: **${u.user.tag}**`);
   }
 
   if (cmd === "reverse") return m.reply(args.join(" ").split("").reverse().join(""));
@@ -328,7 +313,7 @@ client.on("messageCreate", async (m) => {
     return;
   }
 
-  /* ---------- STATS ---------- */
+  /* STATS */
   if (cmd === "count") {
     const w = m.guild.roles.cache.find((r) => r.name.toLowerCase() === "wock");
     return m.reply(`🥤 **${w ? w.members.size : 0}** sippers right now`);
@@ -366,7 +351,7 @@ client.on("messageCreate", async (m) => {
     });
   }
 
-  /* ---------- SOCIAL (KEYLESS) ---------- */
+  /* SOCIAL */
   if (cmd === "compliment") {
     const who = m.mentions.users.first() || m.author;
     return m.reply(`${who} ${rand(COMPLIMENTS)}`);
@@ -374,9 +359,10 @@ client.on("messageCreate", async (m) => {
 
   if (cmd === "insult") {
     const who = m.mentions.users.first() || m.author;
-    const data = await fetch("https://evilinsult.com/generate_insult.php?lang=en&type=json").then((r) => r.json()).catch(() => null);
-    const insult = data?.insult || "you got a weak pour.";
-    return m.reply(`${who} ${insult}`);
+    const data = await fetch("https://evilinsult.com/generate_insult.php?lang=en&type=json")
+      .then((r) => r.json())
+      .catch(() => null);
+    return m.reply(`${who} ${data?.insult || "you got a weak pour."}`);
   }
 
   if (cmd === "dadjoke") {
@@ -397,7 +383,7 @@ client.on("messageCreate", async (m) => {
     return m.reply(f?.text || "Fun fact: you still a legend.");
   }
 
-  /* ---------- APIs (KEYLESS + FREE) ---------- */
+  /* API FUN (KEYLESS) */
   if (cmd === "joke") {
     const j = await fetch("https://official-joke-api.appspot.com/random_joke").then((r) => r.json()).catch(() => null);
     if (!j) return m.reply("no jokes rn");
@@ -412,18 +398,16 @@ client.on("messageCreate", async (m) => {
 
   if (cmd === "cat") {
     const url = (await fetch("https://api.thecatapi.com/v1/images/search").then((r) => r.json()).catch(() => []))?.[0]?.url;
-    if (!url) return m.reply("no cat rn");
-    return m.reply({ files: [url] });
+    return url ? m.reply({ files: [url] }) : m.reply("no cat rn");
   }
 
   if (cmd === "dog") {
     const url = (await fetch("https://api.thedogapi.com/v1/images/search").then((r) => r.json()).catch(() => []))?.[0]?.url;
-    if (!url) return m.reply("no dog rn");
-    return m.reply({ files: [url] });
+    return url ? m.reply({ files: [url] }) : m.reply("no dog rn");
   }
 
+  /* TOOLS (KEYLESS) */
   if (cmd === "translate") {
-    // keyless: MyMemory
     const [fromTo, ...text] = args;
     if (!fromTo || !text.length) return m.reply(`use: ${PREFIX}translate es|en hola`);
     const [from, to] = fromTo.split("|");
@@ -434,7 +418,6 @@ client.on("messageCreate", async (m) => {
   }
 
   if (cmd === "weather") {
-    // keyless: wttr.in (text)
     const city = args.join(" ");
     if (!city) return m.reply(`use: ${PREFIX}weather austin`);
     const url = `https://wttr.in/${encodeURIComponent(city)}?format=j1`;
@@ -473,7 +456,6 @@ client.on("messageCreate", async (m) => {
     });
   }
 
-  /* ---------- TOOLS ---------- */
   if (cmd === "qr") {
     const txt = args.join(" ");
     if (!txt) return m.reply(`use: ${PREFIX}qr wockhardt`);
@@ -514,7 +496,7 @@ client.on("messageCreate", async (m) => {
     return m.reply("DM sent");
   }
 
-  /* ---------- INFO ---------- */
+  /* INFO */
   if (cmd === "serverinfo") {
     const g = m.guild;
     return m.reply({
@@ -544,8 +526,7 @@ client.on("messageCreate", async (m) => {
           .setTitle(u.tag)
           .addFields(
             { name: "Joined", value: mm.joinedAt ? mm.joinedAt.toDateString() : "—", inline: true },
-            { name: "Created", value: u.createdAt.toDateString(), inline: true },
-            { name: `Roles [${mm.roles.cache.size - 1}]`, value: mm.roles.cache.filter(r => r.id !== m.guild.id).map((r) => r.toString()).join(" ").slice(0, 1024) || "—" }
+            { name: "Created", value: u.createdAt.toDateString(), inline: true }
           )
           .setThumbnail(u.displayAvatarURL({ dynamic: true })),
       ],
@@ -557,10 +538,18 @@ client.on("messageCreate", async (m) => {
     return m.reply({ files: [u.displayAvatarURL({ size: 4096, dynamic: true })] });
   }
 
+  if (cmd === "emoji") {
+    const emo = m.content.split(" ").slice(1).find((e) => e.startsWith("<"));
+    if (!emo) return m.reply("send an emoji like <:name:id>");
+    const match = emo.match(/<(a)?:(\w+):(\d+)>/);
+    if (!match) return m.reply("invalid emoji");
+    const url = `https://cdn.discordapp.com/emojis/${match[3]}${match[1] ? ".gif" : ".png"}?size=4096`;
+    return m.reply({ files: [url] });
+  }
+
   if (cmd === "servericon") {
     const icon = m.guild.iconURL({ size: 4096, dynamic: true });
-    if (!icon) return m.reply("no icon");
-    return m.reply({ files: [icon] });
+    return icon ? m.reply({ files: [icon] }) : m.reply("no icon");
   }
 
   if (cmd === "channelinfo") {
@@ -579,37 +568,7 @@ client.on("messageCreate", async (m) => {
     });
   }
 
-  if (cmd === "emoji") {
-    const emo = m.content.split(" ").slice(1).find((e) => e.startsWith("<"));
-    if (!emo) return m.reply("send an emoji like <:name:id>");
-    const match = emo.match(/<(a)?:(\w+):(\d+)>/);
-    if (!match) return m.reply("invalid emoji");
-    const url = `https://cdn.discordapp.com/emojis/${match[3]}${match[1] ? ".gif" : ".png"}?size=4096`;
-    return m.reply({ files: [url] });
-  }
-
-  /* ---------- VOICE ---------- */
-  if (cmd === "doublecup") {
-    const vc = await m.guild.channels.create({
-      name: "Double-Cup Lounge",
-      type: ChannelType.GuildVoice,
-      userLimit: 5,
-    });
-    const inv = await vc.createInvite({ maxAge: 300 }).catch(() => null);
-    if (!inv) return m.reply("couldn’t create invite");
-    return m.reply(`🥤 ${inv.url}`);
-  }
-
-  if (cmd === "randomvc") {
-    if (!m.member.voice.channel) return m.reply("join a vc first");
-    const vcs = m.guild.channels.cache.filter((c) => c.type === ChannelType.GuildVoice && c.joinable);
-    const pick = vcs.random();
-    if (!pick) return m.reply("no vc found");
-    await m.member.voice.setChannel(pick).catch(() => {});
-    return m.reply(`teleported → **${pick.name}**`);
-  }
-
-  /* ---------- MODERATION ---------- */
+  /* MOD */
   if (cmd === "clear") {
     if (!m.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) return m.react("❌");
     const n = Math.min(parseInt(args[0] || "1", 10), 100);
@@ -632,7 +591,12 @@ client.on("messageCreate", async (m) => {
     const raw = args.join(" ");
     const [title, ...desc] = raw.split("|");
     return m.channel.send({
-      embeds: [new EmbedBuilder().setColor(0x8b00ff).setTitle(title?.trim() || "WOCK").setDescription(desc.join("|").trim() || " ")],
+      embeds: [
+        new EmbedBuilder()
+          .setColor(0x8b00ff)
+          .setTitle(title?.trim() || "WOCK")
+          .setDescription(desc.join("|").trim() || " "),
+      ],
     });
   }
 
@@ -672,7 +636,7 @@ client.on("messageCreate", async (m) => {
     return m.reply("🔓 Channel unlocked");
   }
 
-  /* ---------- SNIPE / AFK ---------- */
+  /* AFK + SNIPES */
   if (cmd === "afk") {
     const reason = args.join(" ") || "AFK";
     client.afk.set(m.author.id, reason);
@@ -709,9 +673,31 @@ client.on("messageCreate", async (m) => {
       ],
     });
   }
+
+  /* HELP */
+  if (cmd === "help") {
+    return m.reply({
+      embeds: [
+        new EmbedBuilder()
+          .setColor(0x8b00ff)
+          .setTitle("WOCKHARDT COMMANDS (Railway Safe)")
+          .setDescription(
+            [
+              `**Core:** ,wock ,verify ,count ,leaderboard ,wockstats`,
+              `**Fun:** ,lean ,gif ,8cup ,pickup ,iq ,ship ,coinflip ,roll ,reverse ,mock ,emojify ,drank`,
+              `**Social:** ,compliment ,insult ,dadjoke ,quote ,fact`,
+              `**Tools:** ,weather ,translate ,minecraft ,qr ,shorten ,calc ,binary ,password`,
+              `**Info:** ,serverinfo ,userinfo ,avatar ,emoji ,servericon ,channelinfo`,
+              `**Mod:** ,clear ,say ,embed ,mute ,unmute ,slowmode ,lock ,unlock`,
+              `**Voice:** optional (ENABLE_VOICE=true + ffmpeg required)`,
+            ].join("\n")
+          ),
+      ],
+    });
+  }
 });
 
-/* ---------- INTERACTIONS (VERIFY BUTTON) ---------- */
+/* ---------- VERIFY BUTTON ---------- */
 client.on("interactionCreate", async (i) => {
   if (!i.isButton() || i.customId !== "verify_btn") return;
 
