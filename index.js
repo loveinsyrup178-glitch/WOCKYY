@@ -1,11 +1,17 @@
-/*  WOCKHARDT-BOT v2 – Bleed-style, KEYLESS + Railway-safe
-    - Prefix: -
-    - Commands: STAFF ONLY (owner/admin/mod)
-    - Buttons: PUBLIC (verify button)
-    - Auto delete after 5s:
-        • user command message
-        • bot NON-EMBED messages
-      Embeds NEVER delete
+/*  WOCKHARDT-BOT v2 – Bleed-style, KEYLESS + Railway-safe (no FFmpeg required by default)
+    24/7 VC optional (ENABLE_VOICE=true) | prefix: - | discord.js v14
+
+    ✅ Commands: STAFF ONLY (Owner/Admin/Mods)
+    ✅ Buttons: PUBLIC (verify button works for everyone)
+    ✅ Auto delete after 5s:
+        - user command messages
+        - bot NON-EMBED messages
+      (Embeds NEVER delete)
+
+    ✅ Welcomes:
+      #1 original welcome (role rotation purple/red + matching gif + buttons)
+      #2 second welcome (rotation gifs + user avatar + guild icon + member count + timestamp)
+      #3 third welcome (NO gif, just text + guild icon + member count + timestamp, color rotation orange/green/red/purple)
 */
 
 require("dotenv").config();
@@ -26,35 +32,40 @@ const ms = require("ms");
 const fetch = (...args) => import("node-fetch").then(({ default: f }) => f(...args));
 
 /* ---------- CONFIG ---------- */
-const WELCOME_CH = process.env.WELCOME_CH || "1446420100822335633";
-const WELCOME_CH_2 = process.env.WELCOME_CH_2 || "1447035798930325574";
-const VERIFY_CH = process.env.VERIFY_CH || "1449275035020689458";
+const WELCOME_CH = process.env.WELCOME_CH || "1446420100822335633"; // Welcome #1
+const WELCOME_CH_2 = process.env.WELCOME_CH_2 || "1447035798930325574"; // Welcome #2
+const WELCOME_CH_3 = process.env.WELCOME_CH_3 || "1447035798930325574"; // Welcome #3 (you gave this)
 
+const VERIFY_CH = process.env.VERIFY_CH || "1449275035020689458";
 const IDLE_VC_ID = process.env.IDLE_VC_ID || "1447154877150265466";
+
 const PURPLE_ROLE = process.env.PURPLE_ROLE || "1448654794259435614";
 const RED_ROLE = process.env.RED_ROLE || "1448654699187277875";
-const PIC_PERM_ROLE = process.env.PIC_PERM_ROLE || ""; // set in Railway for now
 
-const GUILD_ID = process.env.GUILD_ID; // recommended
+const GUILD_ID = process.env.GUILD_ID; // optional but recommended
 const TOKEN = process.env.TOKEN;
 
-// Staff lock
-const OWNER_ID = process.env.OWNER_ID || "";
+// staff lock
+const OWNER_ID = process.env.OWNER_ID || ""; // your user id
 const MOD_ROLE_IDS = (process.env.MOD_ROLE_IDS || "")
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean);
 
+// pic perm role for -sip
+const PIC_PERM_ROLE = process.env.PIC_PERM_ROLE || ""; // recommended: set role id in env
+
 if (!TOKEN) throw new Error("Missing TOKEN (set it in Railway Variables or .env)");
 
-/* ---------- OPTIONAL VOICE ---------- */
+/* ---------- OPTIONAL VOICE (Railway-safe default OFF) ---------- */
 const ENABLE_VOICE = String(process.env.ENABLE_VOICE || "false").toLowerCase() === "true";
 
+// Only require voice if enabled.
 let voice = null;
 if (ENABLE_VOICE) {
   try {
     voice = require("@discordjs/voice");
-  } catch {
+  } catch (e) {
     console.warn("⚠️ ENABLE_VOICE=true but @discordjs/voice not available. Voice disabled.");
     voice = null;
   }
@@ -79,7 +90,7 @@ const rand = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
 function autoDelete(msg, delay = 5000) {
   if (!msg) return;
-  // ✅ never delete embeds
+  // ✅ do NOT delete embeds
   if (msg.embeds && msg.embeds.length > 0) return;
   setTimeout(() => msg.delete().catch(() => {}), delay);
 }
@@ -89,8 +100,10 @@ function isStaff(m) {
 
   if (OWNER_ID && m.author.id === OWNER_ID) return true;
 
+  // admin counts as staff
   if (m.member.permissions.has(PermissionsBitField.Flags.Administrator)) return true;
 
+  // mod perms count as staff
   if (
     m.member.permissions.has(PermissionsBitField.Flags.ManageMessages) ||
     m.member.permissions.has(PermissionsBitField.Flags.ModerateMembers) ||
@@ -98,16 +111,18 @@ function isStaff(m) {
   )
     return true;
 
+  // optional mod roles list
   if (MOD_ROLE_IDS.length && MOD_ROLE_IDS.some((id) => m.member.roles.cache.has(id))) return true;
 
   return false;
 }
 
-/* ---------- OPTIONAL VC JOIN (NO AUDIO) ---------- */
+/* ---------- 24/7 VC (OPTIONAL) ---------- */
 async function joinIdleVC(guild) {
   if (!voice) return;
   try {
     const { joinVoiceChannel } = voice;
+
     const vc = guild.channels.cache.get(IDLE_VC_ID);
     if (!vc || (vc.type !== ChannelType.GuildVoice && vc.type !== ChannelType.GuildStageVoice)) return;
 
@@ -139,27 +154,33 @@ function buildWelcomeEmbed(member, roleId, gif) {
     .setTimestamp();
 }
 
-const WELCOME2_GIFS = [
-  "https://media.discordapp.net/attachments/1447035798930325574/1448678742225326221/1B071050-EBBC-499A-9766-0B1B8EA76E04.gif",
-  "https://media.discordapp.net/attachments/1447035798930325574/1448684013458817117/705C1CE2-E35E-4FC5-9DFC-0F9B05CB1F52.gif",
-];
-
 function buildWelcomeEmbed2(member) {
-  const gif = rand(WELCOME2_GIFS);
   const unix = Math.floor(Date.now() / 1000);
+  const gif = rand(WELCOME2_GIFS);
 
   return new EmbedBuilder()
     .setColor(0x8b00ff)
+    .setDescription(`welc to /𐌕𐌕・𝐖𝐎𝐂𝐊𝐇𝐀𝐑𝐃𝐓 <:lean1:1451089899011964960>`)
+    .setThumbnail(member.user.displayAvatarURL({ dynamic: true, size: 256 }))
+    .setAuthor({
+      name: member.guild.name,
+      iconURL: member.guild.iconURL({ dynamic: true, size: 256 }) || undefined,
+    })
+    .setImage(gif)
+    .setFooter({ text: `${member.guild.memberCount} members @ <t:${unix}:f>` })
+    .setTimestamp();
+}
+
+// Welcome #3: NO GIF, only text + guild + timestamp + membercount, color rotation
+function buildWelcomeEmbed3(member) {
+  const unix = Math.floor(Date.now() / 1000);
+  return new EmbedBuilder()
+    .setColor(rand(WELCOME3_COLORS)) // orange/green/red/purple rotation
     .setDescription(
       `welc to /𐌕𐌕・𝐖𝐎𝐂𝐊𝐇𝐀𝐑𝐃𝐓 <:lean1:1451089899011964960>\n\n` +
         `**${member.guild.memberCount} members** @ <t:${unix}:f>`
     )
-    .setAuthor({
-      name: member.user.username,
-      iconURL: member.user.displayAvatarURL({ dynamic: true, size: 256 }),
-    })
-    .setThumbnail(member.guild.iconURL({ dynamic: true, size: 256 }))
-    .setImage(gif)
+    .setThumbnail(member.guild.iconURL({ dynamic: true, size: 256 }) || null)
     .setTimestamp();
 }
 
@@ -214,7 +235,7 @@ const rowVerify = new ActionRowBuilder().addComponents(
   new ButtonBuilder()
     .setCustomId("verify_btn")
     .setLabel("☆ Verify Me ☆")
-    .setEmoji("<:lean:1435440632431906957>")
+    .setEmoji("1376495549179756607")
     .setStyle(ButtonStyle.Secondary)
 );
 
@@ -224,10 +245,25 @@ const GIFS = [
   "https://i.imgur.com/F3hE9aR.gif",
   "https://i.imgur.com/uS7NPr0.gif",
 ];
+
+const WELCOME2_GIFS = [
+  "https://cdn.discordapp.com/attachments/1447035798930325574/1448678742225326221/1B071050-EBBC-499A-9766-0B1B8EA76E04.gif",
+  "https://cdn.discordapp.com/attachments/1447035798930325574/1448684013458817117/705C1CE2-E35E-4FC5-9DFC-0F9B05CB1F52.gif",
+];
+
+// welcome #3 color rotation: ORANGE / GREEN / RED / PURPLE
+const WELCOME3_COLORS = [
+  0xFFA500, // orange
+  0x00FF7F, // green
+  0xB00000, // red
+  0x8A2BE2, // purple
+];
+
 const PICKUPS = [
   "Are you a double cup? cos I wanna hold you all night",
   "Is your name Wock? cos I’m tryna pour into you",
 ];
+
 const EIGHT = [
   "Pour up",
   "Pause pour",
@@ -240,6 +276,7 @@ const EIGHT = [
   "Sticky cup maybe",
   "Codeine vibes only",
 ];
+
 const COMPLIMENTS = [
   "looks fire today",
   "has elite cup-holding skills",
@@ -262,7 +299,7 @@ client.once("ready", async () => {
   if (guild) {
     if (ENABLE_VOICE) await joinIdleVC(guild);
 
-    // Post verify embed once (embed stays)
+    // Post verify embed once (safe)
     try {
       const vch = guild.channels.cache.get(VERIFY_CH);
       if (vch && vch.isTextBased()) {
@@ -278,8 +315,9 @@ client.once("ready", async () => {
   }
 });
 
-/* ---------- MEMBER JOIN (2 WELCOMES) ---------- */
+/* ---------- MEMBER JOIN (3 WELCOMES) ---------- */
 client.on("guildMemberAdd", async (m) => {
+  // welcome #1: role rotation
   const roles = [PURPLE_ROLE, RED_ROLE];
   const pick = roles[Math.floor(Math.random() * roles.length)];
 
@@ -290,11 +328,23 @@ client.on("guildMemberAdd", async (m) => {
 
   await m.roles.add(pick).catch(() => {});
 
+  // send welcome #1
   const ch1 = m.guild.channels.cache.get(WELCOME_CH);
-  if (ch1 && ch1.isTextBased()) ch1.send({ embeds: [buildWelcomeEmbed(m, pick, gif)], components: [rowLinks] }).catch(() => {});
+  if (ch1 && ch1.isTextBased()) {
+    ch1.send({ embeds: [buildWelcomeEmbed(m, pick, gif)], components: [rowLinks] }).catch(() => {});
+  }
 
+  // send welcome #2
   const ch2 = m.guild.channels.cache.get(WELCOME_CH_2);
-  if (ch2 && ch2.isTextBased()) ch2.send({ embeds: [buildWelcomeEmbed2(m)] }).catch(() => {});
+  if (ch2 && ch2.isTextBased()) {
+    ch2.send({ embeds: [buildWelcomeEmbed2(m)] }).catch(() => {});
+  }
+
+  // send welcome #3 (NO GIF)
+  const ch3 = m.guild.channels.cache.get(WELCOME_CH_3);
+  if (ch3 && ch3.isTextBased()) {
+    ch3.send({ embeds: [buildWelcomeEmbed3(m)] }).catch(() => {});
+  }
 });
 
 /* ---------- SNIPE LISTENERS ---------- */
@@ -313,46 +363,48 @@ client.on("messageUpdate", (oldMsg, newMsg) => {
   });
 });
 
-/* ---------- COMMANDS (STAFF ONLY) ---------- */
+/* ---------- COMMANDS ---------- */
 client.on("messageCreate", async (m) => {
   if (m.author.bot) return;
+
+  // ignore typed slash commands unless owner (optional)
+  if (m.content.startsWith("/") && OWNER_ID && m.author.id !== OWNER_ID) return;
+
   if (!m.content.startsWith(PREFIX)) return;
 
-  // ✅ Always delete the user's command message after 5s
+  // delete user command message after 5s
   autoDelete(m, 5000);
 
   const args = m.content.slice(PREFIX.length).trim().split(/\s+/);
   const cmd = (args.shift() || "").toLowerCase();
 
-  // 🔒 Staff-only gate (bot reply deletes)
+  // staff gate
   if (!isStaff(m)) {
     const warn = await m.reply("🚫 Staff only.");
     autoDelete(warn, 5000);
     return;
   }
 
-  /* -------- TEST COMMANDS -------- */
+  /* ----- TESTS ----- */
   if (cmd === "testwelcome1") {
-    const gif = rand(WELCOME2_GIFS);
-    await m.channel.send({ embeds: [buildWelcomeEmbed(m.member, PURPLE_ROLE, gif)], components: [rowLinks] });
-    return;
+    return m.channel.send({
+      embeds: [buildWelcomeEmbed(m.member, PURPLE_ROLE, "https://cdn.discordapp.com/attachments/1447035798930325574/1448678742225326221/1B071050-EBBC-499A-9766-0B1B8EA76E04.gif")],
+      components: [rowLinks],
+    });
   }
-  if (cmd === "testwelcome2") {
-    await m.channel.send({ embeds: [buildWelcomeEmbed2(m.member)] });
-    return;
-  }
+  if (cmd === "testwelcome2") return m.channel.send({ embeds: [buildWelcomeEmbed2(m.member)] });
+  if (cmd === "testwelcome3") return m.channel.send({ embeds: [buildWelcomeEmbed3(m.member)] });
 
-  /* -------- POSTS (EMBEDS STAY) -------- */
+  /* ----- POSTS (EMBEDS STAY) ----- */
   if (cmd === "verify") {
-    await m.channel.send({ embeds: [buildVerifyEmbed()], components: [rowVerify] });
-    return;
-  }
-  if (cmd === "verifycam") {
-    await m.channel.send({ embeds: [buildWockhardtVerifyEmbed2()] });
-    return;
+    return m.channel.send({ embeds: [buildVerifyEmbed()], components: [rowVerify] });
   }
 
-  /* -------- CORE -------- */
+  if (cmd === "verifycam") {
+    return m.channel.send({ embeds: [buildWockhardtVerifyEmbed2()] });
+  }
+
+  /* ----- CORE ----- */
   if (cmd === "wock") {
     const role = m.guild.roles.cache.find((r) => r.name.toLowerCase() === "wock");
     if (!role) {
@@ -379,19 +431,19 @@ client.on("messageCreate", async (m) => {
     }
   }
 
-  // ✅ -sip gives pic perms role (reply deletes)
+  // alias: -sip gives pic perm role (PIC_PERM_ROLE env OR find role name includes "sip")
   if (cmd === "sip") {
-    if (!PIC_PERM_ROLE) {
-      const r = await m.reply("PIC_PERM_ROLE not set in env.");
-      autoDelete(r, 5000);
-      return;
-    }
-    const role = m.guild.roles.cache.get(PIC_PERM_ROLE);
+    let role = null;
+
+    if (PIC_PERM_ROLE) role = m.guild.roles.cache.get(PIC_PERM_ROLE) || null;
+    if (!role) role = m.guild.roles.cache.find((r) => r.name.toLowerCase().includes("sip")) || null;
+
     if (!role) {
-      const r = await m.reply("Pic perm role not found.");
+      const r = await m.reply("Pic perm role not found. Set PIC_PERM_ROLE or name the role with 'sip'.");
       autoDelete(r, 5000);
       return;
     }
+
     if (m.member.roles.cache.has(role.id)) {
       const r = await m.reply("You already got pic perms 🥤");
       autoDelete(r, 5000);
@@ -399,12 +451,12 @@ client.on("messageCreate", async (m) => {
     }
 
     await m.member.roles.add(role).catch(() => {});
-    const r = await m.reply("🥤 Pic perms unlocked. Sip responsibly.");
+    const r = await m.reply("🥤 Pic perms unlocked.");
     autoDelete(r, 5000);
     return;
   }
 
-  /* -------- FUN -------- */
+  /* FUN */
   if (cmd === "lean") {
     const sent = await m.channel.send({ files: [rand(GIFS)] });
     autoDelete(sent, 5000);
@@ -425,12 +477,14 @@ client.on("messageCreate", async (m) => {
     autoDelete(r, 5000);
     return;
   }
+
   if (cmd === "iq") {
     const who = m.mentions.users.first() || m.author;
     const r = await m.reply(`${who} IQ is **${Math.floor(Math.random() * 200)}**`);
     autoDelete(r, 5000);
     return;
   }
+
   if (cmd === "ship") {
     const a = m.mentions.users.first();
     const b = m.mentions.users.last();
@@ -444,28 +498,33 @@ client.on("messageCreate", async (m) => {
     autoDelete(r, 5000);
     return;
   }
+
   if (cmd === "coinflip") {
     const r = await m.reply(`🪙 **${Math.random() > 0.5 ? "Heads" : "Tails"}**`);
     autoDelete(r, 5000);
     return;
   }
+
   if (cmd === "roll") {
     const n = Math.max(2, Math.min(parseInt(args[0] || "6", 10), 1000000));
     const r = await m.reply(`🎲 **${Math.floor(Math.random() * n) + 1}** (1-${n})`);
     autoDelete(r, 5000);
     return;
   }
+
   if (cmd === "reverse") {
     const r = await m.reply(args.join(" ").split("").reverse().join(""));
     autoDelete(r, 5000);
     return;
   }
+
   if (cmd === "mock") {
     const t = args.join(" ");
     const r = await m.reply(t.split("").map((c, i) => (i % 2 ? c.toUpperCase() : c.toLowerCase())).join(""));
     autoDelete(r, 5000);
     return;
   }
+
   if (cmd === "emojify") {
     const map = {
       a: "🇦", b: "🇧", c: "🇨", d: "🇩", e: "🇪", f: "🇫", g: "🇬", h: "🇭", i: "🇮", j: "🇯",
@@ -476,6 +535,7 @@ client.on("messageCreate", async (m) => {
     autoDelete(r, 5000);
     return;
   }
+
   if (cmd === "drank") {
     const msgs = await m.channel.messages.fetch({ limit: 2 });
     const last = msgs.last();
@@ -483,7 +543,7 @@ client.on("messageCreate", async (m) => {
     return;
   }
 
-  /* -------- STATS -------- */
+  /* STATS */
   if (cmd === "count") {
     const w = m.guild.roles.cache.find((r) => r.name.toLowerCase() === "wock");
     const r = await m.reply(`🥤 **${w ? w.members.size : 0}** sippers right now`);
@@ -513,7 +573,7 @@ client.on("messageCreate", async (m) => {
       verified: g.roles.cache.find((r) => r.name.toLowerCase() === "verified")?.members.size || 0,
     };
 
-    await m.channel.send({
+    return m.channel.send({
       embeds: [
         new EmbedBuilder()
           .setColor(0x8b00ff)
@@ -523,10 +583,9 @@ client.on("messageCreate", async (m) => {
           ),
       ],
     });
-    return;
   }
 
-  /* -------- SOCIAL -------- */
+  /* SOCIAL */
   if (cmd === "compliment") {
     const who = m.mentions.users.first() || m.author;
     const r = await m.reply(`${who} ${rand(COMPLIMENTS)}`);
@@ -568,7 +627,7 @@ client.on("messageCreate", async (m) => {
     return;
   }
 
-  /* -------- API FUN -------- */
+  /* API FUN (KEYLESS) */
   if (cmd === "joke") {
     const j = await fetch("https://official-joke-api.appspot.com/random_joke").then((r) => r.json()).catch(() => null);
     if (!j) {
@@ -576,8 +635,7 @@ client.on("messageCreate", async (m) => {
       autoDelete(r, 5000);
       return;
     }
-    await m.reply({ embeds: [new EmbedBuilder().setColor(0x8b00ff).setTitle(j.setup).setDescription(j.punchline)] });
-    return;
+    return m.reply({ embeds: [new EmbedBuilder().setColor(0x8b00ff).setTitle(j.setup).setDescription(j.punchline)] });
   }
 
   if (cmd === "meme") {
@@ -587,8 +645,7 @@ client.on("messageCreate", async (m) => {
       autoDelete(r, 5000);
       return;
     }
-    await m.reply({ embeds: [new EmbedBuilder().setTitle(meme.title || "meme").setImage(meme.url).setColor(0x8b00ff)] });
-    return;
+    return m.reply({ embeds: [new EmbedBuilder().setTitle(meme.title || "meme").setImage(meme.url).setColor(0x8b00ff)] });
   }
 
   if (cmd === "cat") {
@@ -605,7 +662,7 @@ client.on("messageCreate", async (m) => {
     return;
   }
 
-  /* -------- TOOLS -------- */
+  /* TOOLS (KEYLESS) */
   if (cmd === "translate") {
     const [fromTo, ...text] = args;
     if (!fromTo || !text.length) {
@@ -641,7 +698,7 @@ client.on("messageCreate", async (m) => {
       return;
     }
     const c = data.current_condition[0];
-    await m.reply({
+    return m.reply({
       embeds: [
         new EmbedBuilder()
           .setColor(0x8b00ff)
@@ -653,7 +710,6 @@ client.on("messageCreate", async (m) => {
           ),
       ],
     });
-    return;
   }
 
   if (cmd === "minecraft") {
@@ -669,7 +725,7 @@ client.on("messageCreate", async (m) => {
       autoDelete(r, 5000);
       return;
     }
-    await m.reply({
+    return m.reply({
       embeds: [
         new EmbedBuilder()
           .setColor(0x8b00ff)
@@ -680,7 +736,6 @@ client.on("messageCreate", async (m) => {
           ),
       ],
     });
-    return;
   }
 
   if (cmd === "qr") {
@@ -745,10 +800,10 @@ client.on("messageCreate", async (m) => {
     return;
   }
 
-  /* -------- INFO -------- */
+  /* INFO */
   if (cmd === "serverinfo") {
     const g = m.guild;
-    await m.reply({
+    return m.reply({
       embeds: [
         new EmbedBuilder()
           .setColor(0x8b00ff)
@@ -762,7 +817,6 @@ client.on("messageCreate", async (m) => {
           .setThumbnail(g.iconURL({ dynamic: true })),
       ],
     });
-    return;
   }
 
   if (cmd === "userinfo") {
@@ -773,7 +827,7 @@ client.on("messageCreate", async (m) => {
       autoDelete(r, 5000);
       return;
     }
-    await m.reply({
+    return m.reply({
       embeds: [
         new EmbedBuilder()
           .setColor(0x8b00ff)
@@ -785,7 +839,6 @@ client.on("messageCreate", async (m) => {
           .setThumbnail(u.displayAvatarURL({ dynamic: true })),
       ],
     });
-    return;
   }
 
   if (cmd === "avatar") {
@@ -823,7 +876,7 @@ client.on("messageCreate", async (m) => {
 
   if (cmd === "channelinfo") {
     const c = m.channel;
-    await m.reply({
+    return m.reply({
       embeds: [
         new EmbedBuilder()
           .setColor(0x8b00ff)
@@ -835,10 +888,9 @@ client.on("messageCreate", async (m) => {
           ),
       ],
     });
-    return;
   }
 
-  /* -------- MOD -------- */
+  /* MOD */
   if (cmd === "clear") {
     if (!m.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) return m.react("❌");
     const n = Math.min(parseInt(args[0] || "1", 10), 100);
@@ -861,7 +913,7 @@ client.on("messageCreate", async (m) => {
     if (!m.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) return m.react("❌");
     const raw = args.join(" ");
     const [title, ...desc] = raw.split("|");
-    await m.channel.send({
+    return m.channel.send({
       embeds: [
         new EmbedBuilder()
           .setColor(0x8b00ff)
@@ -869,7 +921,6 @@ client.on("messageCreate", async (m) => {
           .setDescription(desc.join("|").trim() || " "),
       ],
     });
-    return;
   }
 
   if (cmd === "mute") {
@@ -926,7 +977,7 @@ client.on("messageCreate", async (m) => {
     return;
   }
 
-  /* -------- AFK + SNIPES -------- */
+  /* AFK + SNIPES */
   if (cmd === "afk") {
     const reason = args.join(" ") || "AFK";
     client.afk.set(m.author.id, reason);
@@ -942,7 +993,7 @@ client.on("messageCreate", async (m) => {
       autoDelete(r, 5000);
       return;
     }
-    await m.channel.send({
+    return m.channel.send({
       embeds: [
         new EmbedBuilder()
           .setColor(0x8b00ff)
@@ -951,7 +1002,6 @@ client.on("messageCreate", async (m) => {
           .setTimestamp(msg.createdAt),
       ],
     });
-    return;
   }
 
   if (cmd === "editsnipe") {
@@ -961,7 +1011,7 @@ client.on("messageCreate", async (m) => {
       autoDelete(r, 5000);
       return;
     }
-    await m.channel.send({
+    return m.channel.send({
       embeds: [
         new EmbedBuilder()
           .setColor(0x8b00ff)
@@ -973,37 +1023,35 @@ client.on("messageCreate", async (m) => {
           .setTimestamp(msg.createdAt),
       ],
     });
-    return;
   }
 
-  /* -------- HELP (EMBED STAYS) -------- */
+  /* HELP (EMBED STAYS) */
   if (cmd === "help") {
-    await m.reply({
+    return m.reply({
       embeds: [
         new EmbedBuilder()
           .setColor(0x8b00ff)
           .setTitle("WOCKHARDT COMMANDS (Staff Only)")
           .setDescription(
             [
-              `**Core:** -wock -sip -verify -verifycam -count -leaderboard -wockstats`,
-              `**Test:** -testwelcome1 -testwelcome2`,
+              `**Welcomes Test:** -testwelcome1 -testwelcome2 -testwelcome3`,
+              `**Posts:** -verify -verifycam`,
+              `**Core:** -wock -sip -count -leaderboard -wockstats`,
               `**Fun:** -lean -gif -8cup -pickup -iq -ship -coinflip -roll -reverse -mock -emojify -drank`,
               `**Social:** -compliment -insult -dadjoke -quote -fact`,
-              `**API Fun:** -joke -meme -cat -dog`,
               `**Tools:** -weather -translate -minecraft -qr -shorten -calc -binary -password`,
               `**Info:** -serverinfo -userinfo -avatar -emoji -servericon -channelinfo`,
               `**Mod:** -clear -say -embed -mute -unmute -slowmode -lock -unlock`,
-              `**Note:** Verify BUTTON is public • Embeds never delete`,
+              `**Snipes:** -snipe -editsnipe`,
+              `**Note:** Verify button is public • Embeds never delete`,
             ].join("\n")
           ),
       ],
     });
-    return;
   }
 
-  // unknown command (deletes)
-  const unk = await m.reply("unknown command");
-  autoDelete(unk, 5000);
+  const r = await m.reply("unknown command");
+  autoDelete(r, 5000);
 });
 
 /* ---------- VERIFY BUTTON (PUBLIC) ---------- */
