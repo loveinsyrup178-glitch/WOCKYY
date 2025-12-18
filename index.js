@@ -2,7 +2,8 @@
     Prefix: - | discord.js v14
 
     ✅ Commands: STAFF ONLY (Owner/Admin/Mods)
-    ✅ Buttons: PUBLIC (verify button works for everyone)
+    ✅ Buttons: PUBLIC (verify button + color role buttons work for everyone)
+
     ✅ Auto delete after 5s:
         - user command messages
         - bot NON-EMBED messages
@@ -21,6 +22,12 @@
     ✅ Extra:
       -sip => gives PIC PERM role (PIC_PERM_ROLE id OR role name contains "sip")
       -verifycam => sends the orange cam/selfie verify embed (emoji <:omgdghhg:1451163968377978902> only)
+
+    ✅ NEW:
+      -colors => sends Color Roles embed w/ button role picker (PUBLIC buttons)
+      -testcolors => alias for -colors
+      Buttons auto-swap: user can only have ONE color role at a time.
+      Optional "REMOVE COLOR" button included.
 */
 
 require("dotenv").config();
@@ -67,6 +74,39 @@ const MOD_ROLE_IDS = (process.env.MOD_ROLE_IDS || "")
 const PIC_PERM_ROLE = process.env.PIC_PERM_ROLE || "";
 
 if (!TOKEN) throw new Error("Missing TOKEN (set it in Railway Variables or .env)");
+
+/* ---------- COLOR ROLES (BUTTON PANEL) ---------- */
+/*
+  Put these in Railway Variables (recommended) OR paste role IDs directly below:
+  COLOR_ROLE_RED
+  COLOR_ROLE_ORANGE
+  COLOR_ROLE_BLUE
+  COLOR_ROLE_YELLOW
+  COLOR_ROLE_GREEN
+  COLOR_ROLE_PURPLE
+*/
+
+// Your uploaded emojis (already perfect)
+const COLOR_EMOJIS = {
+  red: "<:emoji_315:1451264887513682101>",
+  orange: "<:emoji_316:1451264991188488296>",
+  blue: "<:emoji_317:1451265073866870937>",
+  yellow: "<:emoji_318:1451265135007240225>",
+  green: "<:emoji_319:1451265183014977537>",
+  purple: "<:emoji_320:1451265302435205325>",
+};
+
+// Role IDs (ENV)
+const COLOR_ROLES = {
+  red: process.env.COLOR_ROLE_RED || "",
+  orange: process.env.COLOR_ROLE_ORANGE || "",
+  blue: process.env.COLOR_ROLE_BLUE || "",
+  yellow: process.env.COLOR_ROLE_YELLOW || "",
+  green: process.env.COLOR_ROLE_GREEN || "",
+  purple: process.env.COLOR_ROLE_PURPLE || "",
+};
+
+const ENABLE_COLOR_CLEAR = true;
 
 /* ---------- OPTIONAL VOICE (Railway-safe default OFF) ---------- */
 const ENABLE_VOICE = String(process.env.ENABLE_VOICE || "false").toLowerCase() === "true";
@@ -237,6 +277,88 @@ function buildWockhardtVerifyEmbed2() {
     .setTimestamp();
 }
 
+/* ---------- COLOR ROLE PANEL (EMBED + BUTTONS) ---------- */
+function buildColorRolesEmbed(guild) {
+  const top = "╔═══━⟡━═══╗";
+  const mid = "╠═══━⟡━═══╣";
+  const bot = "╚═══━⟡━═══╝";
+
+  return new EmbedBuilder()
+    .setColor(0xFFA500)
+    .setTitle("🎨 𐌕𐌕・𝐖𝐎𝐂𝐊𝐇𝐀𝐑𝐃𝐓 ・ COLOR ROLES")
+    .setDescription(
+      [
+        top,
+        "Pick **ONE** color below.",
+        "Choosing another one will **swap** your color.",
+        mid,
+        `${COLOR_EMOJIS.red} **RED**   ${COLOR_EMOJIS.orange} **ORANGE**   ${COLOR_EMOJIS.blue} **BLUE**`,
+        `${COLOR_EMOJIS.yellow} **YELLOW**   ${COLOR_EMOJIS.green} **GREEN**   ${COLOR_EMOJIS.purple} **PURPLE**`,
+        bot,
+        "",
+        `Server: **${guild?.name || "WOCKHARDT"}**`,
+      ].join("\n")
+    )
+    .setFooter({ text: "Color roles • WOCKHARDT" })
+    .setTimestamp();
+}
+
+function buildColorRoleButtons() {
+  const row1 = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId("color_red")
+      .setLabel("RED")
+      .setEmoji(COLOR_EMOJIS.red)
+      .setStyle(ButtonStyle.Secondary),
+
+    new ButtonBuilder()
+      .setCustomId("color_orange")
+      .setLabel("ORANGE")
+      .setEmoji(COLOR_EMOJIS.orange)
+      .setStyle(ButtonStyle.Secondary),
+
+    new ButtonBuilder()
+      .setCustomId("color_blue")
+      .setLabel("BLUE")
+      .setEmoji(COLOR_EMOJIS.blue)
+      .setStyle(ButtonStyle.Secondary)
+  );
+
+  const row2 = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId("color_yellow")
+      .setLabel("YELLOW")
+      .setEmoji(COLOR_EMOJIS.yellow)
+      .setStyle(ButtonStyle.Secondary),
+
+    new ButtonBuilder()
+      .setCustomId("color_green")
+      .setLabel("GREEN")
+      .setEmoji(COLOR_EMOJIS.green)
+      .setStyle(ButtonStyle.Secondary),
+
+    new ButtonBuilder()
+      .setCustomId("color_purple")
+      .setLabel("PURPLE")
+      .setEmoji(COLOR_EMOJIS.purple)
+      .setStyle(ButtonStyle.Secondary)
+  );
+
+  const rows = [row1, row2];
+
+  if (ENABLE_COLOR_CLEAR) {
+    const row3 = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId("color_clear")
+        .setLabel("REMOVE COLOR")
+        .setStyle(ButtonStyle.Danger)
+    );
+    rows.push(row3);
+  }
+
+  return rows;
+}
+
 /* ---------- BUTTONS ---------- */
 const rowLinks = new ActionRowBuilder().addComponents(
   new ButtonBuilder().setLabel("CREATE VC").setStyle(ButtonStyle.Link).setURL("https://discord.gg/AV58C6AwT"),
@@ -250,7 +372,7 @@ const rowVerify = new ActionRowBuilder().addComponents(
   new ButtonBuilder()
     .setCustomId("verify_btn")
     .setLabel("☆ Verify Me ☆")
-    .setEmoji("1376495549179756607")
+    .setEmoji("1376495549179756607") // keep your original
     .setStyle(ButtonStyle.Secondary)
 );
 
@@ -339,7 +461,6 @@ client.on("guildMemberAdd", async (m) => {
   // welcome #1: role rotation
   const roles = [PURPLE_ROLE, RED_ROLE];
   const pick = roles[Math.floor(Math.random() * roles.length)];
-
   const gif = pick === PURPLE_ROLE ? PURPLE_GIF : RED_GIF;
 
   await m.roles.add(pick).catch(() => {});
@@ -429,6 +550,14 @@ client.on("messageCreate", async (m) => {
 
   if (cmd === "verifycam") {
     return m.channel.send({ embeds: [buildWockhardtVerifyEmbed2()] });
+  }
+
+  /* ----- COLOR ROLES PANEL (SEND / TEST) ----- */
+  if (cmd === "colors" || cmd === "testcolors") {
+    return m.channel.send({
+      embeds: [buildColorRolesEmbed(m.guild)],
+      components: buildColorRoleButtons(),
+    });
   }
 
   /* ----- CORE ----- */
@@ -1076,6 +1205,7 @@ client.on("messageCreate", async (m) => {
             [
               `**Welcome Tests:** -testwelcome1 (RED) -testwelcome2 (PURPLE) -testwelcome3`,
               `**Posts:** -verify -verifycam`,
+              `**Color Roles:** -colors (-testcolors)`,
               `**Core:** -wock -sip -count -leaderboard -wockstats`,
               `**Fun:** -lean -gif -8cup -pickup -iq -ship -coinflip -roll -reverse -mock -emojify -drank`,
               `**Social:** -compliment -insult -dadjoke -quote -fact`,
@@ -1083,7 +1213,7 @@ client.on("messageCreate", async (m) => {
               `**Info:** -serverinfo -userinfo -avatar -emoji -servericon -channelinfo`,
               `**Mod:** -clear -say -embed -mute -unmute -slowmode -lock -unlock`,
               `**Snipes:** -afk -snipe -editsnipe`,
-              `**Note:** Verify button is public • Embeds never delete`,
+              `**Note:** Verify + color buttons are public • Embeds never delete`,
             ].join("\n")
           ),
       ],
@@ -1095,16 +1225,62 @@ client.on("messageCreate", async (m) => {
   autoDelete(r, 5000);
 });
 
-/* ---------- VERIFY BUTTON (PUBLIC) ---------- */
+/* ---------- BUTTONS (PUBLIC): VERIFY + COLOR ROLES ---------- */
 client.on("interactionCreate", async (i) => {
-  if (!i.isButton() || i.customId !== "verify_btn") return;
+  if (!i.isButton()) return;
 
-  const role = i.guild.roles.cache.find((r) => r.name.toLowerCase() === "verified");
-  if (!role) return i.reply({ content: "⚠️ Verified role not found.", ephemeral: true });
-  if (i.member.roles.cache.has(role.id)) return i.reply({ content: "You're already verified.", ephemeral: true });
+  // VERIFY BUTTON
+  if (i.customId === "verify_btn") {
+    const role = i.guild.roles.cache.find((r) => r.name.toLowerCase() === "verified");
+    if (!role) return i.reply({ content: "⚠️ Verified role not found.", ephemeral: true });
+    if (i.member.roles.cache.has(role.id)) return i.reply({ content: "You're already verified.", ephemeral: true });
 
-  await i.member.roles.add(role).catch(() => {});
-  return i.reply({ content: "✅ Verified—welcome to WOCKHARDT!", ephemeral: true });
+    await i.member.roles.add(role).catch(() => {});
+    return i.reply({ content: "✅ Verified—welcome to WOCKHARDT!", ephemeral: true });
+  }
+
+  // COLOR ROLE BUTTONS
+  if (!i.customId.startsWith("color_")) return;
+
+  const key = i.customId.split("_")[1]; // red/orange/blue/yellow/green/purple/clear
+  const allRoleIds = Object.values(COLOR_ROLES).filter(Boolean);
+
+  // Clear color
+  if (key === "clear") {
+    try {
+      if (allRoleIds.length) await i.member.roles.remove(allRoleIds).catch(() => {});
+      return i.reply({ content: "🧼 Color removed.", ephemeral: true });
+    } catch {
+      return i.reply({ content: "⚠️ I couldn’t remove your color (check bot role position).", ephemeral: true });
+    }
+  }
+
+  const roleIdToAdd = COLOR_ROLES[key];
+  if (!roleIdToAdd) {
+    return i.reply({
+      content: "⚠️ Color roles aren’t set yet. Add Railway env vars COLOR_ROLE_RED/ORANGE/BLUE/YELLOW/GREEN/PURPLE.",
+      ephemeral: true,
+    });
+  }
+
+  const alreadyHas = i.member.roles.cache.has(roleIdToAdd);
+
+  try {
+    // Remove all colors first
+    if (allRoleIds.length) await i.member.roles.remove(allRoleIds).catch(() => {});
+
+    // If they clicked same color, treat as toggle OFF
+    if (alreadyHas) return i.reply({ content: "🧼 Color removed.", ephemeral: true });
+
+    // Add selected color
+    await i.member.roles.add(roleIdToAdd).catch(() => {});
+    return i.reply({ content: `🎨 Color set: **${key.toUpperCase()}**`, ephemeral: true });
+  } catch {
+    return i.reply({
+      content: "⚠️ I couldn’t update your color. Put my bot role ABOVE the color roles.",
+      ephemeral: true,
+    });
+  }
 });
 
 /* ---------- LOGIN ---------- */
