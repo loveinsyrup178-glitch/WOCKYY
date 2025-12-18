@@ -1,15 +1,12 @@
 {
   "name": "wockhardt-bot",
   "version": "2.0.0",
-  "description": "WOCKHARDT bot: 2 welcomes, public verify button, staff-only dash commands (auto-delete), Railway-safe (no ffmpeg)",
+  "description": "WOCKHARDT bot: 3 welcomes, public verify button, staff-only commands, auto-delete non-embeds, Railway-safe",
   "main": "index.js",
   "type": "commonjs",
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js"
-  },
-  "engines": {
-    "node": ">=18.x"
   },
   "dependencies": {
     "discord.js": "^14.16.3",
@@ -23,7 +20,10 @@
   "devDependencies": {
     "nodemon": "^3.1.7"
   },
-  "keywords": ["discord", "bot", "wockhardt", "railway", "welcome", "verify"],
+  "engines": {
+    "node": ">=18.x"
+  },
+  "keywords": ["discord", "bot", "wockhardt", "railway", "verify", "welcome"],
   "author": "you",
   "license": "MIT"
 }
