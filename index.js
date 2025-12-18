@@ -1,5 +1,11 @@
-/*  WOCKHARDT-BOT v2 – Bleed-style, KEYLESS + Railway-safe (no FFmpeg required)
-    24/7 VC optional (ENABLE_VOICE=true) | -commands staff only | verify button public
+/*  WOCKHARDT-BOT v2 – Bleed-style, KEYLESS + Railway-safe
+    - Prefix: -
+    - Commands: STAFF ONLY (owner/admin/mod)
+    - Buttons: PUBLIC (verify button)
+    - Auto delete after 5s:
+        • user command message
+        • bot NON-EMBED messages
+      Embeds NEVER delete
 */
 
 require("dotenv").config();
@@ -27,14 +33,13 @@ const VERIFY_CH = process.env.VERIFY_CH || "1449275035020689458";
 const IDLE_VC_ID = process.env.IDLE_VC_ID || "1447154877150265466";
 const PURPLE_ROLE = process.env.PURPLE_ROLE || "1448654794259435614";
 const RED_ROLE = process.env.RED_ROLE || "1448654699187277875";
-
-const PIC_PERM_ROLE = process.env.PIC_PERM_ROLE || ""; // (temp) set in Railway vars for now
+const PIC_PERM_ROLE = process.env.PIC_PERM_ROLE || ""; // set in Railway for now
 
 const GUILD_ID = process.env.GUILD_ID; // recommended
 const TOKEN = process.env.TOKEN;
 
 // Staff lock
-const OWNER_ID = process.env.OWNER_ID || ""; // your discord user id
+const OWNER_ID = process.env.OWNER_ID || "";
 const MOD_ROLE_IDS = (process.env.MOD_ROLE_IDS || "")
   .split(",")
   .map((s) => s.trim())
@@ -42,14 +47,14 @@ const MOD_ROLE_IDS = (process.env.MOD_ROLE_IDS || "")
 
 if (!TOKEN) throw new Error("Missing TOKEN (set it in Railway Variables or .env)");
 
-/* ---------- OPTIONAL VOICE (Railway-safe) ---------- */
+/* ---------- OPTIONAL VOICE ---------- */
 const ENABLE_VOICE = String(process.env.ENABLE_VOICE || "false").toLowerCase() === "true";
 
 let voice = null;
 if (ENABLE_VOICE) {
   try {
     voice = require("@discordjs/voice");
-  } catch (e) {
+  } catch {
     console.warn("⚠️ ENABLE_VOICE=true but @discordjs/voice not available. Voice disabled.");
     voice = null;
   }
@@ -71,10 +76,11 @@ const client = new Client({
 /* ---------- UTILS ---------- */
 const PREFIX = "-";
 const rand = (arr) => arr[Math.floor(Math.random() * arr.length)];
-const isMod = (m) => m.member.permissions.has(PermissionsBitField.Flags.ManageMessages);
 
 function autoDelete(msg, delay = 5000) {
   if (!msg) return;
+  // ✅ never delete embeds
+  if (msg.embeds && msg.embeds.length > 0) return;
   setTimeout(() => msg.delete().catch(() => {}), delay);
 }
 
@@ -97,12 +103,11 @@ function isStaff(m) {
   return false;
 }
 
-/* ---------- 24/7 VC (OPTIONAL, NO AUDIO / NO FFMPEG) ---------- */
+/* ---------- OPTIONAL VC JOIN (NO AUDIO) ---------- */
 async function joinIdleVC(guild) {
   if (!voice) return;
   try {
     const { joinVoiceChannel } = voice;
-
     const vc = guild.channels.cache.get(IDLE_VC_ID);
     if (!vc || (vc.type !== ChannelType.GuildVoice && vc.type !== ChannelType.GuildStageVoice)) return;
 
@@ -167,7 +172,6 @@ function buildVerifyEmbed() {
     .setFooter({ text: "Verification required • WOCKHARDT" });
 }
 
-// Your orange cam verify embed (roles listed by name text for now)
 function buildWockhardtVerifyEmbed2() {
   return new EmbedBuilder()
     .setColor(0xFFA500) // orange
@@ -215,13 +219,33 @@ const rowVerify = new ActionRowBuilder().addComponents(
 );
 
 /* ---------- POOLS ---------- */
-const GIFS = ["https://i.imgur.com/3X8MPrv.gif", "https://i.imgur.com/F3hE9aR.gif", "https://i.imgur.com/uS7NPr0.gif"];
-const PICKUPS = ["Are you a double cup? cos I wanna hold you all night", "Is your name Wock? cos I’m tryna pour into you"];
-const EIGHT = [
-  "Pour up", "Pause pour", "Double cup says yes", "Foam cloudy ask later", "Too much ice try again",
-  "Sip slow – yes", "Cut with soda nah", "Foam clear definitely", "Sticky cup maybe", "Codeine vibes only",
+const GIFS = [
+  "https://i.imgur.com/3X8MPrv.gif",
+  "https://i.imgur.com/F3hE9aR.gif",
+  "https://i.imgur.com/uS7NPr0.gif",
 ];
-const COMPLIMENTS = ["looks fire today", "has elite cup-holding skills", "is the main character", "smells like lavender lean"];
+const PICKUPS = [
+  "Are you a double cup? cos I wanna hold you all night",
+  "Is your name Wock? cos I’m tryna pour into you",
+];
+const EIGHT = [
+  "Pour up",
+  "Pause pour",
+  "Double cup says yes",
+  "Foam cloudy ask later",
+  "Too much ice try again",
+  "Sip slow – yes",
+  "Cut with soda nah",
+  "Foam clear definitely",
+  "Sticky cup maybe",
+  "Codeine vibes only",
+];
+const COMPLIMENTS = [
+  "looks fire today",
+  "has elite cup-holding skills",
+  "is the main character",
+  "smells like lavender lean",
+];
 
 /* ---------- CACHES ---------- */
 client.snipe = new Map();
@@ -238,7 +262,7 @@ client.once("ready", async () => {
   if (guild) {
     if (ENABLE_VOICE) await joinIdleVC(guild);
 
-    // Post verify embed once
+    // Post verify embed once (embed stays)
     try {
       const vch = guild.channels.cache.get(VERIFY_CH);
       if (vch && vch.isTextBased()) {
@@ -254,7 +278,7 @@ client.once("ready", async () => {
   }
 });
 
-/* ---------- MEMBER JOIN ---------- */
+/* ---------- MEMBER JOIN (2 WELCOMES) ---------- */
 client.on("guildMemberAdd", async (m) => {
   const roles = [PURPLE_ROLE, RED_ROLE];
   const pick = roles[Math.floor(Math.random() * roles.length)];
@@ -289,32 +313,46 @@ client.on("messageUpdate", (oldMsg, newMsg) => {
   });
 });
 
-/* ---------- COMMANDS (STAFF ONLY, AUTO-DELETE) ---------- */
+/* ---------- COMMANDS (STAFF ONLY) ---------- */
 client.on("messageCreate", async (m) => {
   if (m.author.bot) return;
   if (!m.content.startsWith(PREFIX)) return;
 
-  // delete the user's command message after 5s
+  // ✅ Always delete the user's command message after 5s
   autoDelete(m, 5000);
 
   const args = m.content.slice(PREFIX.length).trim().split(/\s+/);
   const cmd = (args.shift() || "").toLowerCase();
 
-  // staff-only gate
+  // 🔒 Staff-only gate (bot reply deletes)
   if (!isStaff(m)) {
     const warn = await m.reply("🚫 Staff only.");
     autoDelete(warn, 5000);
     return;
   }
 
-  /* COMMAND: post orange verify embed */
-  if (cmd === "verifycam") {
-    const sent = await m.channel.send({ embeds: [buildWockhardtVerifyEmbed2()] });
-    autoDelete(sent, 5000);
+  /* -------- TEST COMMANDS -------- */
+  if (cmd === "testwelcome1") {
+    const gif = rand(WELCOME2_GIFS);
+    await m.channel.send({ embeds: [buildWelcomeEmbed(m.member, PURPLE_ROLE, gif)], components: [rowLinks] });
+    return;
+  }
+  if (cmd === "testwelcome2") {
+    await m.channel.send({ embeds: [buildWelcomeEmbed2(m.member)] });
     return;
   }
 
-  /* CORE */
+  /* -------- POSTS (EMBEDS STAY) -------- */
+  if (cmd === "verify") {
+    await m.channel.send({ embeds: [buildVerifyEmbed()], components: [rowVerify] });
+    return;
+  }
+  if (cmd === "verifycam") {
+    await m.channel.send({ embeds: [buildWockhardtVerifyEmbed2()] });
+    return;
+  }
+
+  /* -------- CORE -------- */
   if (cmd === "wock") {
     const role = m.guild.roles.cache.find((r) => r.name.toLowerCase() === "wock");
     if (!role) {
@@ -341,7 +379,7 @@ client.on("messageCreate", async (m) => {
     }
   }
 
-  /* -sip gives pic perms role */
+  // ✅ -sip gives pic perms role (reply deletes)
   if (cmd === "sip") {
     if (!PIC_PERM_ROLE) {
       const r = await m.reply("PIC_PERM_ROLE not set in env.");
@@ -366,44 +404,33 @@ client.on("messageCreate", async (m) => {
     return;
   }
 
-  if (cmd === "verify") {
-    const sent = await m.channel.send({ embeds: [buildVerifyEmbed()], components: [rowVerify] });
-    autoDelete(sent, 5000);
-    return;
-  }
-
-  /* FUN */
+  /* -------- FUN -------- */
   if (cmd === "lean") {
     const sent = await m.channel.send({ files: [rand(GIFS)] });
     autoDelete(sent, 5000);
     return;
   }
-
   if (cmd === "gif") {
     const r = await m.reply(rand(GIFS));
     autoDelete(r, 5000);
     return;
   }
-
   if (cmd === "8cup") {
     const r = await m.reply(`🎱 **${rand(EIGHT)}**`);
     autoDelete(r, 5000);
     return;
   }
-
   if (cmd === "pickup") {
     const r = await m.reply(rand(PICKUPS));
     autoDelete(r, 5000);
     return;
   }
-
   if (cmd === "iq") {
     const who = m.mentions.users.first() || m.author;
     const r = await m.reply(`${who} IQ is **${Math.floor(Math.random() * 200)}**`);
     autoDelete(r, 5000);
     return;
   }
-
   if (cmd === "ship") {
     const a = m.mentions.users.first();
     const b = m.mentions.users.last();
@@ -417,33 +444,28 @@ client.on("messageCreate", async (m) => {
     autoDelete(r, 5000);
     return;
   }
-
   if (cmd === "coinflip") {
     const r = await m.reply(`🪙 **${Math.random() > 0.5 ? "Heads" : "Tails"}**`);
     autoDelete(r, 5000);
     return;
   }
-
   if (cmd === "roll") {
     const n = Math.max(2, Math.min(parseInt(args[0] || "6", 10), 1000000));
     const r = await m.reply(`🎲 **${Math.floor(Math.random() * n) + 1}** (1-${n})`);
     autoDelete(r, 5000);
     return;
   }
-
   if (cmd === "reverse") {
     const r = await m.reply(args.join(" ").split("").reverse().join(""));
     autoDelete(r, 5000);
     return;
   }
-
   if (cmd === "mock") {
     const t = args.join(" ");
     const r = await m.reply(t.split("").map((c, i) => (i % 2 ? c.toUpperCase() : c.toLowerCase())).join(""));
     autoDelete(r, 5000);
     return;
   }
-
   if (cmd === "emojify") {
     const map = {
       a: "🇦", b: "🇧", c: "🇨", d: "🇩", e: "🇪", f: "🇫", g: "🇬", h: "🇭", i: "🇮", j: "🇯",
@@ -454,7 +476,6 @@ client.on("messageCreate", async (m) => {
     autoDelete(r, 5000);
     return;
   }
-
   if (cmd === "drank") {
     const msgs = await m.channel.messages.fetch({ limit: 2 });
     const last = msgs.last();
@@ -462,7 +483,7 @@ client.on("messageCreate", async (m) => {
     return;
   }
 
-  /* STATS */
+  /* -------- STATS -------- */
   if (cmd === "count") {
     const w = m.guild.roles.cache.find((r) => r.name.toLowerCase() === "wock");
     const r = await m.reply(`🥤 **${w ? w.members.size : 0}** sippers right now`);
@@ -492,7 +513,7 @@ client.on("messageCreate", async (m) => {
       verified: g.roles.cache.find((r) => r.name.toLowerCase() === "verified")?.members.size || 0,
     };
 
-    const sent = await m.channel.send({
+    await m.channel.send({
       embeds: [
         new EmbedBuilder()
           .setColor(0x8b00ff)
@@ -502,11 +523,10 @@ client.on("messageCreate", async (m) => {
           ),
       ],
     });
-    autoDelete(sent, 5000);
     return;
   }
 
-  /* SOCIAL */
+  /* -------- SOCIAL -------- */
   if (cmd === "compliment") {
     const who = m.mentions.users.first() || m.author;
     const r = await m.reply(`${who} ${rand(COMPLIMENTS)}`);
@@ -548,7 +568,7 @@ client.on("messageCreate", async (m) => {
     return;
   }
 
-  /* API FUN */
+  /* -------- API FUN -------- */
   if (cmd === "joke") {
     const j = await fetch("https://official-joke-api.appspot.com/random_joke").then((r) => r.json()).catch(() => null);
     if (!j) {
@@ -556,10 +576,7 @@ client.on("messageCreate", async (m) => {
       autoDelete(r, 5000);
       return;
     }
-    const sent = await m.reply({
-      embeds: [new EmbedBuilder().setColor(0x8b00ff).setTitle(j.setup).setDescription(j.punchline)],
-    });
-    autoDelete(sent, 5000);
+    await m.reply({ embeds: [new EmbedBuilder().setColor(0x8b00ff).setTitle(j.setup).setDescription(j.punchline)] });
     return;
   }
 
@@ -570,10 +587,7 @@ client.on("messageCreate", async (m) => {
       autoDelete(r, 5000);
       return;
     }
-    const sent = await m.reply({
-      embeds: [new EmbedBuilder().setTitle(meme.title || "meme").setImage(meme.url).setColor(0x8b00ff)],
-    });
-    autoDelete(sent, 5000);
+    await m.reply({ embeds: [new EmbedBuilder().setTitle(meme.title || "meme").setImage(meme.url).setColor(0x8b00ff)] });
     return;
   }
 
@@ -591,7 +605,7 @@ client.on("messageCreate", async (m) => {
     return;
   }
 
-  /* TOOLS */
+  /* -------- TOOLS -------- */
   if (cmd === "translate") {
     const [fromTo, ...text] = args;
     if (!fromTo || !text.length) {
@@ -627,7 +641,7 @@ client.on("messageCreate", async (m) => {
       return;
     }
     const c = data.current_condition[0];
-    const sent = await m.reply({
+    await m.reply({
       embeds: [
         new EmbedBuilder()
           .setColor(0x8b00ff)
@@ -639,7 +653,6 @@ client.on("messageCreate", async (m) => {
           ),
       ],
     });
-    autoDelete(sent, 5000);
     return;
   }
 
@@ -656,7 +669,7 @@ client.on("messageCreate", async (m) => {
       autoDelete(r, 5000);
       return;
     }
-    const sent = await m.reply({
+    await m.reply({
       embeds: [
         new EmbedBuilder()
           .setColor(0x8b00ff)
@@ -667,7 +680,6 @@ client.on("messageCreate", async (m) => {
           ),
       ],
     });
-    autoDelete(sent, 5000);
     return;
   }
 
@@ -733,10 +745,10 @@ client.on("messageCreate", async (m) => {
     return;
   }
 
-  /* INFO */
+  /* -------- INFO -------- */
   if (cmd === "serverinfo") {
     const g = m.guild;
-    const sent = await m.reply({
+    await m.reply({
       embeds: [
         new EmbedBuilder()
           .setColor(0x8b00ff)
@@ -750,28 +762,29 @@ client.on("messageCreate", async (m) => {
           .setThumbnail(g.iconURL({ dynamic: true })),
       ],
     });
-    autoDelete(sent, 5000);
     return;
   }
 
   if (cmd === "userinfo") {
     const u = m.mentions.users.first() || m.author;
     const mm = await m.guild.members.fetch(u.id).catch(() => null);
-    const sent = !mm
-      ? await m.reply("user not found")
-      : await m.reply({
-          embeds: [
-            new EmbedBuilder()
-              .setColor(0x8b00ff)
-              .setTitle(u.tag)
-              .addFields(
-                { name: "Joined", value: mm.joinedAt ? mm.joinedAt.toDateString() : "—", inline: true },
-                { name: "Created", value: u.createdAt.toDateString(), inline: true }
-              )
-              .setThumbnail(u.displayAvatarURL({ dynamic: true })),
-          ],
-        });
-    autoDelete(sent, 5000);
+    if (!mm) {
+      const r = await m.reply("user not found");
+      autoDelete(r, 5000);
+      return;
+    }
+    await m.reply({
+      embeds: [
+        new EmbedBuilder()
+          .setColor(0x8b00ff)
+          .setTitle(u.tag)
+          .addFields(
+            { name: "Joined", value: mm.joinedAt ? mm.joinedAt.toDateString() : "—", inline: true },
+            { name: "Created", value: u.createdAt.toDateString(), inline: true }
+          )
+          .setThumbnail(u.displayAvatarURL({ dynamic: true })),
+      ],
+    });
     return;
   }
 
@@ -810,7 +823,7 @@ client.on("messageCreate", async (m) => {
 
   if (cmd === "channelinfo") {
     const c = m.channel;
-    const sent = await m.reply({
+    await m.reply({
       embeds: [
         new EmbedBuilder()
           .setColor(0x8b00ff)
@@ -822,11 +835,10 @@ client.on("messageCreate", async (m) => {
           ),
       ],
     });
-    autoDelete(sent, 5000);
     return;
   }
 
-  /* MOD */
+  /* -------- MOD -------- */
   if (cmd === "clear") {
     if (!m.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) return m.react("❌");
     const n = Math.min(parseInt(args[0] || "1", 10), 100);
@@ -837,7 +849,7 @@ client.on("messageCreate", async (m) => {
   }
 
   if (cmd === "say") {
-    if (!isMod(m)) return m.react("❌");
+    if (!m.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) return m.react("❌");
     const txt = args.join(" ");
     if (!txt) return;
     const sent = await m.channel.send(txt);
@@ -846,10 +858,10 @@ client.on("messageCreate", async (m) => {
   }
 
   if (cmd === "embed") {
-    if (!isMod(m)) return m.react("❌");
+    if (!m.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) return m.react("❌");
     const raw = args.join(" ");
     const [title, ...desc] = raw.split("|");
-    const sent = await m.channel.send({
+    await m.channel.send({
       embeds: [
         new EmbedBuilder()
           .setColor(0x8b00ff)
@@ -857,7 +869,6 @@ client.on("messageCreate", async (m) => {
           .setDescription(desc.join("|").trim() || " "),
       ],
     });
-    autoDelete(sent, 5000);
     return;
   }
 
@@ -915,7 +926,7 @@ client.on("messageCreate", async (m) => {
     return;
   }
 
-  /* AFK + SNIPES */
+  /* -------- AFK + SNIPES -------- */
   if (cmd === "afk") {
     const reason = args.join(" ") || "AFK";
     client.afk.set(m.author.id, reason);
@@ -931,7 +942,7 @@ client.on("messageCreate", async (m) => {
       autoDelete(r, 5000);
       return;
     }
-    const sent = await m.channel.send({
+    await m.channel.send({
       embeds: [
         new EmbedBuilder()
           .setColor(0x8b00ff)
@@ -940,7 +951,6 @@ client.on("messageCreate", async (m) => {
           .setTimestamp(msg.createdAt),
       ],
     });
-    autoDelete(sent, 5000);
     return;
   }
 
@@ -951,7 +961,7 @@ client.on("messageCreate", async (m) => {
       autoDelete(r, 5000);
       return;
     }
-    const sent = await m.channel.send({
+    await m.channel.send({
       embeds: [
         new EmbedBuilder()
           .setColor(0x8b00ff)
@@ -963,13 +973,12 @@ client.on("messageCreate", async (m) => {
           .setTimestamp(msg.createdAt),
       ],
     });
-    autoDelete(sent, 5000);
     return;
   }
 
-  /* HELP */
+  /* -------- HELP (EMBED STAYS) -------- */
   if (cmd === "help") {
-    const sent = await m.reply({
+    await m.reply({
       embeds: [
         new EmbedBuilder()
           .setColor(0x8b00ff)
@@ -977,20 +986,24 @@ client.on("messageCreate", async (m) => {
           .setDescription(
             [
               `**Core:** -wock -sip -verify -verifycam -count -leaderboard -wockstats`,
+              `**Test:** -testwelcome1 -testwelcome2`,
               `**Fun:** -lean -gif -8cup -pickup -iq -ship -coinflip -roll -reverse -mock -emojify -drank`,
               `**Social:** -compliment -insult -dadjoke -quote -fact`,
+              `**API Fun:** -joke -meme -cat -dog`,
               `**Tools:** -weather -translate -minecraft -qr -shorten -calc -binary -password`,
               `**Info:** -serverinfo -userinfo -avatar -emoji -servericon -channelinfo`,
               `**Mod:** -clear -say -embed -mute -unmute -slowmode -lock -unlock`,
-              `**Voice:** optional (ENABLE_VOICE=true) joins VC (no audio / no ffmpeg)`,
-              `**Note:** Verify button is PUBLIC.`,
+              `**Note:** Verify BUTTON is public • Embeds never delete`,
             ].join("\n")
           ),
       ],
     });
-    autoDelete(sent, 5000);
     return;
   }
+
+  // unknown command (deletes)
+  const unk = await m.reply("unknown command");
+  autoDelete(unk, 5000);
 });
 
 /* ---------- VERIFY BUTTON (PUBLIC) ---------- */
