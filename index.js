@@ -277,29 +277,33 @@ function buildWockhardtVerifyEmbed2() {
     .setTimestamp();
 }
 
-/* ---------- COLOR ROLE PANEL (EMBED + BUTTONS) ---------- */
-function buildColorRolesEmbed(guild) {
-  const top = "╔═══━⟡━═══╗";
-  const mid = "╠═══━⟡━═══╣";
-  const bot = "╚═══━⟡━═══╝";
+function buildColorRolesEmbed() {
+  const dividerTop = "━━━━━━━━━━━━━━━━━━✦━━━━━━━━━━━━━━━━━━";
+  const dividerMid = "━━━━━━━━━━━━✦━━━━━━━━━━━━";
+  const dividerBot = "━━━━━━━━━━━━━━━━━━✦━━━━━━━━━━━━━━━━━━";
 
   return new EmbedBuilder()
-    .setColor(0xFFA500)
-    .setTitle("🎨 𐌕𐌕・𝐖𝐎𝐂𝐊𝐇𝐀𝐑𝐃𝐓 ・ COLOR ROLES")
+    .setColor(0xFFA500) // orange accent
+    .setTitle("🎨 ++ ・𝐖𝐎𝐂𝐊𝐇𝐀𝐑𝐃𝐓 ・ 𝐂𝐎𝐋𝐎𝐑 𝐑𝐎𝐋𝐄𝐒")
     .setDescription(
       [
-        top,
-        "Pick **ONE** color below.",
-        "Choosing another one will **swap** your color.",
-        mid,
-        `${COLOR_EMOJIS.red} **RED**   ${COLOR_EMOJIS.orange} **ORANGE**   ${COLOR_EMOJIS.blue} **BLUE**`,
-        `${COLOR_EMOJIS.yellow} **YELLOW**   ${COLOR_EMOJIS.green} **GREEN**   ${COLOR_EMOJIS.purple} **PURPLE**`,
-        bot,
+        dividerTop,
         "",
-        `Server: **${guild?.name || "WOCKHARDT"}**`,
+        "**Pick ONE color below.**",
+        "Choosing another one will **swap** your color.",
+        "",
+        dividerMid,
+        "",
+        `${COLOR_EMOJIS.red} **RED**      ${COLOR_EMOJIS.orange} **ORANGE**      ${COLOR_EMOJIS.blue} **BLUE**`,
+        `${COLOR_EMOJIS.yellow} **YELLOW**      ${COLOR_EMOJIS.green} **GREEN**      ${COLOR_EMOJIS.purple} **PURPLE**`,
+        "",
+        dividerBot,
       ].join("\n")
     )
-    .setFooter({ text: "Color roles • WOCKHARDT" })
+    // ✅ YOUR BOTTLE IMAGE
+    .setImage(
+      "https://cdn.discordapp.com/attachments/1404284297992470638/1451261776095215636/IMG_1845.jpg"
+    )
     .setTimestamp();
 }
 
