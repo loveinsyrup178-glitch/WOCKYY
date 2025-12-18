@@ -59,7 +59,7 @@ const client = new Client({
 });
 
 /* ---------- UTILS ---------- */
-const PREFIX = ",";
+const PREFIX = "-";
 const rand = (arr) => arr[Math.floor(Math.random() * arr.length)];
 const isMod = (m) => m.member.permissions.has(PermissionsBitField.Flags.ManageMessages);
 
@@ -350,6 +350,9 @@ client.on("messageCreate", async (m) => {
       ],
     });
   }
+
+// ignore every /command unless it’s from the owner
+if (m.content.startsWith("/") && m.author.id !== "YOUR_DISCORD_ID") return;
 
   /* SOCIAL */
   if (cmd === "compliment") {
