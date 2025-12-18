@@ -1,5 +1,5 @@
 /*  WOCKHARDT-BOT v2 – Bleed-style, KEYLESS + Railway-safe (no FFmpeg required)
-    24/7 VC optional (ENABLE_VOICE=true) | ,wock | djs v14
+    24/7 VC optional (ENABLE_VOICE=true) | -wock | djs v14
 */
 
 require("dotenv").config();
@@ -21,12 +21,14 @@ const fetch = (...args) => import("node-fetch").then(({ default: f }) => f(...ar
 
 /* ---------- CONFIG ---------- */
 const WELCOME_CH = process.env.WELCOME_CH || "1446420100822335633";
+const WELCOME_CH_2 = process.env.WELCOME_CH_2 || "1447035798930325574"; // ✅ your 2nd welcome channel
 const VERIFY_CH = process.env.VERIFY_CH || "1449275035020689458";
 const IDLE_VC_ID = process.env.IDLE_VC_ID || "1447154877150265466";
 const PURPLE_ROLE = process.env.PURPLE_ROLE || "1448654794259435614";
 const RED_ROLE = process.env.RED_ROLE || "1448654699187277875";
 const GUILD_ID = process.env.GUILD_ID; // optional but recommended
 const TOKEN = process.env.TOKEN;
+const OWNER_ID = process.env.OWNER_ID || ""; // optional
 
 if (!TOKEN) throw new Error("Missing TOKEN (set it in Railway Variables or .env)");
 
@@ -34,7 +36,6 @@ if (!TOKEN) throw new Error("Missing TOKEN (set it in Railway Variables or .env)
 const ENABLE_VOICE = String(process.env.ENABLE_VOICE || "false").toLowerCase() === "true";
 
 // Only require voice if user explicitly enables it.
-// This prevents Railway FFmpeg crashes by default.
 let voice = null;
 if (ENABLE_VOICE) {
   try {
@@ -59,30 +60,20 @@ const client = new Client({
 });
 
 /* ---------- UTILS ---------- */
-const PREFIX = "-";
+const PREFIX = "-"; // ✅ DASH
 const rand = (arr) => arr[Math.floor(Math.random() * arr.length)];
 const isMod = (m) => m.member.permissions.has(PermissionsBitField.Flags.ManageMessages);
 
-/* ---------- 24/7 VC (OPTIONAL) ---------- */
+/* ---------- 24/7 VC (OPTIONAL, NO AUDIO / NO FFMPEG) ---------- */
 async function joinIdleVC(guild) {
   if (!voice) return; // voice disabled
   try {
-    const {
-      joinVoiceChannel,
-      createAudioPlayer,
-      createAudioResource,
-      NoSubscriberBehavior,
-      AudioPlayerStatus,
-    } = voice;
+    const { joinVoiceChannel } = voice;
 
     const vc = guild.channels.cache.get(IDLE_VC_ID);
     if (!vc || (vc.type !== ChannelType.GuildVoice && vc.type !== ChannelType.GuildStageVoice)) return;
 
-    // NOTE: this requires ffmpeg if you play audio; on Railway you'll need ffmpeg installed.
-    // If you enable voice on Railway, add ffmpeg via nixpacks.
-    const SILENCE = createAudioResource("./silence.mp3");
-
-    const conn = joinVoiceChannel({
+    joinVoiceChannel({
       channelId: vc.id,
       guildId: guild.id,
       adapterCreator: guild.voiceAdapterCreator,
@@ -90,19 +81,9 @@ async function joinIdleVC(guild) {
       selfMute: false,
     });
 
-    const player = createAudioPlayer({
-      behaviors: { noSubscriber: NoSubscriberBehavior.Play },
-    });
-
-    player.play(SILENCE);
-    conn.subscribe(player);
-
-    player.on(AudioPlayerStatus.Idle, () => player.play(SILENCE));
-    player.on("error", () => player.play(SILENCE));
-
-    console.log("🎧 Joined idle VC:", vc.name);
+    console.log("🎧 Joined idle VC (no audio):", vc.name);
   } catch (e) {
-    console.warn("⚠️ Voice join failed (likely missing ffmpeg). Disable ENABLE_VOICE or install ffmpeg.", e?.message);
+    console.warn("⚠️ Voice join failed. Disable ENABLE_VOICE or check permissions.", e?.message);
   }
 }
 
@@ -118,6 +99,15 @@ function buildWelcomeEmbed(member, roleId, gif) {
     .setColor(color)
     .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
     .setTimestamp();
+}
+
+// ✅ second welcome: your exact style + member count
+function buildWelcomeEmbed2(member) {
+  return new EmbedBuilder()
+    .setColor(0x8b00ff)
+    .setDescription(`welc to /𐌕𐌕・𝐖𝐎𝐂𝐊𝐇𝐀𝐑𝐃𝐓 <:lean1:1451089899011964960>`)
+    .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
+    .setFooter({ text: `${member.guild.memberCount} members @ <t:${Math.floor(Date.now() / 1000)}:f>` });
 }
 
 function buildVerifyEmbed() {
@@ -142,7 +132,8 @@ const rowVerify = new ActionRowBuilder().addComponents(
   new ButtonBuilder()
     .setCustomId("verify_btn")
     .setLabel("☆ Verify Me ☆")
-    .setEmoji("1376495549179756607")
+    // you can swap emoji here (must be full custom emoji format OR unicode)
+    .setEmoji("<:lean:1435440632431906957>")
     .setStyle(ButtonStyle.Secondary)
 );
 
@@ -218,8 +209,14 @@ client.on("guildMemberAdd", async (m) => {
       : "https://cdn.discordapp.com/attachments/1447035798930325574/1448684013458817117/705C1CE2-E35E-4FC5-9DFC-0F9B05CB1F52.gif";
 
   await m.roles.add(pick).catch(() => {});
+
+  // 1) original themed welcome
   const ch = m.guild.channels.cache.get(WELCOME_CH);
-  if (ch && ch.isTextBased()) ch.send({ embeds: [buildWelcomeEmbed(m, pick, gif)], components: [rowLinks] });
+  if (ch && ch.isTextBased()) ch.send({ embeds: [buildWelcomeEmbed(m, pick, gif)], components: [rowLinks] }).catch(() => {});
+
+  // 2) ✅ new clean welcome in second channel
+  const ch2 = m.guild.channels.cache.get(WELCOME_CH_2);
+  if (ch2 && ch2.isTextBased()) ch2.send({ embeds: [buildWelcomeEmbed2(m)] }).catch(() => {});
 });
 
 /* ---------- SNIPE LISTENERS ---------- */
@@ -240,6 +237,10 @@ client.on("messageUpdate", (oldMsg, newMsg) => {
 /* ---------- COMMANDS ---------- */
 client.on("messageCreate", async (m) => {
   if (m.author.bot) return;
+
+  // ✅ ignore slash-looking messages unless owner (optional)
+  if (m.content.startsWith("/") && OWNER_ID && m.author.id !== OWNER_ID) return;
+
   if (!m.content.startsWith(PREFIX)) return;
 
   const args = m.content.slice(PREFIX.length).trim().split(/\s+/);
@@ -265,7 +266,7 @@ client.on("messageCreate", async (m) => {
   }
 
   /* FUN */
-  if (cmd === "lean") return m.channel.send({ files: [rand(GIFS)] });
+  if (cmd === "lean") return m.channel.send(rand(GIFS)); // sends a gif link
   if (cmd === "gif") return m.reply(rand(GIFS)); // keyless fallback
   if (cmd === "8cup") return m.reply(`🎱 **${rand(EIGHT)}**`);
   if (cmd === "pickup") return m.reply(rand(PICKUPS));
@@ -350,9 +351,6 @@ client.on("messageCreate", async (m) => {
       ],
     });
   }
-
-// ignore every /command unless it’s from the owner
-if (m.content.startsWith("/") && m.author.id !== "YOUR_DISCORD_ID") return;
 
   /* SOCIAL */
   if (cmd === "compliment") {
@@ -686,13 +684,13 @@ if (m.content.startsWith("/") && m.author.id !== "YOUR_DISCORD_ID") return;
           .setTitle("WOCKHARDT COMMANDS (Railway Safe)")
           .setDescription(
             [
-              `**Core:** ,wock ,verify ,count ,leaderboard ,wockstats`,
-              `**Fun:** ,lean ,gif ,8cup ,pickup ,iq ,ship ,coinflip ,roll ,reverse ,mock ,emojify ,drank`,
-              `**Social:** ,compliment ,insult ,dadjoke ,quote ,fact`,
-              `**Tools:** ,weather ,translate ,minecraft ,qr ,shorten ,calc ,binary ,password`,
-              `**Info:** ,serverinfo ,userinfo ,avatar ,emoji ,servericon ,channelinfo`,
-              `**Mod:** ,clear ,say ,embed ,mute ,unmute ,slowmode ,lock ,unlock`,
-              `**Voice:** optional (ENABLE_VOICE=true + ffmpeg required)`,
+              `**Core:** -wock -verify -count -leaderboard -wockstats`,
+              `**Fun:** -lean -gif -8cup -pickup -iq -ship -coinflip -roll -reverse -mock -emojify -drank`,
+              `**Social:** -compliment -insult -dadjoke -quote -fact`,
+              `**Tools:** -weather -translate -minecraft -qr -shorten -calc -binary -password`,
+              `**Info:** -serverinfo -userinfo -avatar -emoji -servericon -channelinfo`,
+              `**Mod:** -clear -say -embed -mute -unmute -slowmode -lock -unlock`,
+              `**Voice:** optional (ENABLE_VOICE=true) joins VC (no audio / no ffmpeg)`,
             ].join("\n")
           ),
       ],
