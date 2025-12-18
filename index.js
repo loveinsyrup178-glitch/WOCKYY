@@ -1,5 +1,5 @@
 /*  WOCKHARDT-BOT v2 – Bleed-style, KEYLESS + Railway-safe (no FFmpeg required by default)
-    24/7 VC optional (ENABLE_VOICE=true) | prefix: - | discord.js v14
+    Prefix: - | discord.js v14
 
     ✅ Commands: STAFF ONLY (Owner/Admin/Mods)
     ✅ Buttons: PUBLIC (verify button works for everyone)
@@ -8,10 +8,19 @@
         - bot NON-EMBED messages
       (Embeds NEVER delete)
 
-    ✅ Welcomes:
-      #1 original welcome (role rotation purple/red + matching gif + buttons)
-      #2 second welcome (rotation gifs + user avatar + guild icon + member count + timestamp)
-      #3 third welcome (NO gif, just text + guild icon + member count + timestamp, color rotation orange/green/red/purple)
+    ✅ Welcomes (3 separate, NOT merged):
+      #1 ORIGINAL welcome (role rotation purple/red + matching gif + buttons) -> WELCOME_CH
+      #2 SECOND welcome (gif rotation + user avatar + guild icon + member count + timestamp) -> WELCOME_CH_2
+      #3 THIRD welcome (NO gif, text + guild icon + member count + timestamp, color rotation orange/green/red/purple) -> WELCOME_CH_3
+
+    ✅ Tests (forced):
+      -testwelcome1 => forced RED welcome #1
+      -testwelcome2 => forced PURPLE welcome #1
+      -testwelcome3 => welcome #3 (color rotates)
+
+    ✅ Extra:
+      -sip => gives PIC PERM role (PIC_PERM_ROLE id OR role name contains "sip")
+      -verifycam => sends the orange cam/selfie verify embed (emoji <:omgdghhg:1451163968377978902> only)
 */
 
 require("dotenv").config();
@@ -32,9 +41,11 @@ const ms = require("ms");
 const fetch = (...args) => import("node-fetch").then(({ default: f }) => f(...args));
 
 /* ---------- CONFIG ---------- */
+const PREFIX = "-";
+
 const WELCOME_CH = process.env.WELCOME_CH || "1446420100822335633"; // Welcome #1
 const WELCOME_CH_2 = process.env.WELCOME_CH_2 || "1447035798930325574"; // Welcome #2
-const WELCOME_CH_3 = process.env.WELCOME_CH_3 || "1447035798930325574"; // Welcome #3 (you gave this)
+const WELCOME_CH_3 = process.env.WELCOME_CH_3 || "1447035798930325574"; // Welcome #3
 
 const VERIFY_CH = process.env.VERIFY_CH || "1449275035020689458";
 const IDLE_VC_ID = process.env.IDLE_VC_ID || "1447154877150265466";
@@ -42,18 +53,18 @@ const IDLE_VC_ID = process.env.IDLE_VC_ID || "1447154877150265466";
 const PURPLE_ROLE = process.env.PURPLE_ROLE || "1448654794259435614";
 const RED_ROLE = process.env.RED_ROLE || "1448654699187277875";
 
-const GUILD_ID = process.env.GUILD_ID; // optional but recommended
+const GUILD_ID = process.env.GUILD_ID || ""; // recommended
 const TOKEN = process.env.TOKEN;
 
 // staff lock
-const OWNER_ID = process.env.OWNER_ID || ""; // your user id
+const OWNER_ID = process.env.OWNER_ID || ""; // your discord user id
 const MOD_ROLE_IDS = (process.env.MOD_ROLE_IDS || "")
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean);
 
 // pic perm role for -sip
-const PIC_PERM_ROLE = process.env.PIC_PERM_ROLE || ""; // recommended: set role id in env
+const PIC_PERM_ROLE = process.env.PIC_PERM_ROLE || "";
 
 if (!TOKEN) throw new Error("Missing TOKEN (set it in Railway Variables or .env)");
 
@@ -79,13 +90,11 @@ const client = new Client({
     GatewayIntentBits.GuildVoiceStates,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildInvites,
   ],
   partials: [Partials.Channel, Partials.GuildMember, Partials.Message, Partials.User],
 });
 
 /* ---------- UTILS ---------- */
-const PREFIX = "-";
 const rand = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
 function autoDelete(msg, delay = 5000) {
@@ -98,12 +107,13 @@ function autoDelete(msg, delay = 5000) {
 function isStaff(m) {
   if (!m?.guild || !m?.member) return false;
 
+  // owner
   if (OWNER_ID && m.author.id === OWNER_ID) return true;
 
-  // admin counts as staff
+  // admin
   if (m.member.permissions.has(PermissionsBitField.Flags.Administrator)) return true;
 
-  // mod perms count as staff
+  // mod perms
   if (
     m.member.permissions.has(PermissionsBitField.Flags.ManageMessages) ||
     m.member.permissions.has(PermissionsBitField.Flags.ModerateMembers) ||
@@ -146,7 +156,10 @@ function buildWelcomeEmbed(member, roleId, gif) {
   return new EmbedBuilder()
     .setTitle("𐌕𐌕・𝐖𝐎𝐂𝐊𝐇𝐀𝐑𝐃𝐓 𝘞𝘌𝘓𝘊𝘖𝘔𝘌 ✦")
     .setDescription(
-      `𝘞𝘦𝘭𝘤𝘰𝘮𝘦 𝘵𝘰 𝘵𝘩𝘦 𝘞𝘰𝘤𝘬 𝘡𝘰𝘯𝘦, ${member}\n\n✦ 𝘴𝘵𝘢𝘺 𝘢𝘤𝘵𝘪𝘷𝘦\n✦ 𝘪𝘯𝘷 𝟯 𝘧𝘰𝘳 𝘱𝘦𝘳𝘮𝘴\n✦ 𝘧𝘦𝘦𝘭 𝘢𝘵 𝘩𝘰𝘮𝘦`
+      `𝘞𝘦𝘭𝘤𝘰𝘮𝘦 𝘵𝘰 𝘵𝘩𝘦 𝘞𝘰𝘤𝘬 𝘡𝘰𝘯𝘦, ${member}\n\n` +
+        `✦ 𝘴𝘵𝘢𝘺 𝘢𝘤𝘵𝘪𝘷𝘦\n` +
+        `✦ 𝘪𝘯𝘷 𝟯 𝘧𝘰𝘳 𝘱𝘦𝘳𝘮𝘴\n` +
+        `✦ 𝘧𝘦𝘦𝘭 𝘢𝘵 𝘩𝘰𝘮𝘦`
     )
     .setImage(gif)
     .setColor(color)
@@ -154,6 +167,7 @@ function buildWelcomeEmbed(member, roleId, gif) {
     .setTimestamp();
 }
 
+// Welcome #2: gif rotation + user avatar + guild icon + membercount + timestamp
 function buildWelcomeEmbed2(member) {
   const unix = Math.floor(Date.now() / 1000);
   const gif = rand(WELCOME2_GIFS);
@@ -171,11 +185,11 @@ function buildWelcomeEmbed2(member) {
     .setTimestamp();
 }
 
-// Welcome #3: NO GIF, only text + guild + timestamp + membercount, color rotation
+// Welcome #3: NO GIF, text + guild icon + membercount + timestamp, color rotates
 function buildWelcomeEmbed3(member) {
   const unix = Math.floor(Date.now() / 1000);
   return new EmbedBuilder()
-    .setColor(rand(WELCOME3_COLORS)) // orange/green/red/purple rotation
+    .setColor(rand(WELCOME3_COLORS))
     .setDescription(
       `welc to /𐌕𐌕・𝐖𝐎𝐂𝐊𝐇𝐀𝐑𝐃𝐓 <:lean1:1451089899011964960>\n\n` +
         `**${member.guild.memberCount} members** @ <t:${unix}:f>`
@@ -188,14 +202,15 @@ function buildVerifyEmbed() {
   return new EmbedBuilder()
     .setColor(0x8b00ff)
     .setTitle("⛧ 𐌕𐌕・𝐖𝐎𝐂𝐊𝐇𝐀𝐑𝐃𝐓 ・ Verification ⛧")
-    .setDescription("Welcome, sipper.\nTap the lean cup below to verify & unlock the rest of the server.")
+    .setDescription("Welcome, sipper.\nTap the button below to verify & unlock the rest of the server.")
     .setImage("https://cdn.discordapp.com/attachments/1447035798930325574/1449276801405816995/IMG_4631.png")
     .setFooter({ text: "Verification required • WOCKHARDT" });
 }
 
+// Your orange cam/selfie verify embed (ONLY that emoji)
 function buildWockhardtVerifyEmbed2() {
   return new EmbedBuilder()
-    .setColor(0xFFA500) // orange
+    .setColor(0xFFA500)
     .setTitle("HOW TO VERIFY")
     .setDescription(
       [
@@ -246,12 +261,16 @@ const GIFS = [
   "https://i.imgur.com/uS7NPr0.gif",
 ];
 
-const WELCOME2_GIFS = [
-  "https://cdn.discordapp.com/attachments/1447035798930325574/1448678742225326221/1B071050-EBBC-499A-9766-0B1B8EA76E04.gif",
-  "https://cdn.discordapp.com/attachments/1447035798930325574/1448684013458817117/705C1CE2-E35E-4FC5-9DFC-0F9B05CB1F52.gif",
-];
+// Welcome #1 matching gifs
+const PURPLE_GIF =
+  "https://cdn.discordapp.com/attachments/1447035798930325574/1448678742225326221/1B071050-EBBC-499A-9766-0B1B8EA76E04.gif";
+const RED_GIF =
+  "https://cdn.discordapp.com/attachments/1447035798930325574/1448684013458817117/705C1CE2-E35E-4FC5-9DFC-0F9B05CB1F52.gif";
 
-// welcome #3 color rotation: ORANGE / GREEN / RED / PURPLE
+// Welcome #2 gif rotation
+const WELCOME2_GIFS = [PURPLE_GIF, RED_GIF];
+
+// Welcome #3 color rotation
 const WELCOME3_COLORS = [
   0xFFA500, // orange
   0x00FF7F, // green
@@ -321,10 +340,7 @@ client.on("guildMemberAdd", async (m) => {
   const roles = [PURPLE_ROLE, RED_ROLE];
   const pick = roles[Math.floor(Math.random() * roles.length)];
 
-  const gif =
-    pick === PURPLE_ROLE
-      ? "https://cdn.discordapp.com/attachments/1447035798930325574/1448678742225326221/1B071050-EBBC-499A-9766-0B1B8EA76E04.gif"
-      : "https://cdn.discordapp.com/attachments/1447035798930325574/1448684013458817117/705C1CE2-E35E-4FC5-9DFC-0F9B05CB1F52.gif";
+  const gif = pick === PURPLE_ROLE ? PURPLE_GIF : RED_GIF;
 
   await m.roles.add(pick).catch(() => {});
 
@@ -352,7 +368,6 @@ client.on("messageDelete", (msg) => {
   if (!msg?.author || msg.author.bot) return;
   client.snipe.set(msg.channel.id, { author: msg.author, content: msg.content, createdAt: msg.createdAt });
 });
-
 client.on("messageUpdate", (oldMsg, newMsg) => {
   if (!newMsg?.author || newMsg.author.bot) return;
   client.editSnipe.set(newMsg.channel.id, {
@@ -367,7 +382,7 @@ client.on("messageUpdate", (oldMsg, newMsg) => {
 client.on("messageCreate", async (m) => {
   if (m.author.bot) return;
 
-  // ignore typed slash commands unless owner (optional)
+  // Ignore typed /commands unless it’s from OWNER (optional)
   if (m.content.startsWith("/") && OWNER_ID && m.author.id !== OWNER_ID) return;
 
   if (!m.content.startsWith(PREFIX)) return;
@@ -378,22 +393,34 @@ client.on("messageCreate", async (m) => {
   const args = m.content.slice(PREFIX.length).trim().split(/\s+/);
   const cmd = (args.shift() || "").toLowerCase();
 
-  // staff gate
+  // staff gate (ALL commands staff-only)
   if (!isStaff(m)) {
     const warn = await m.reply("🚫 Staff only.");
     autoDelete(warn, 5000);
     return;
   }
 
-  /* ----- TESTS ----- */
+  /* ----- TEST WELCOMES (FORCED) ----- */
   if (cmd === "testwelcome1") {
+    // forced RED welcome #1
     return m.channel.send({
-      embeds: [buildWelcomeEmbed(m.member, PURPLE_ROLE, "https://cdn.discordapp.com/attachments/1447035798930325574/1448678742225326221/1B071050-EBBC-499A-9766-0B1B8EA76E04.gif")],
+      embeds: [buildWelcomeEmbed(m.member, RED_ROLE, RED_GIF)],
       components: [rowLinks],
     });
   }
-  if (cmd === "testwelcome2") return m.channel.send({ embeds: [buildWelcomeEmbed2(m.member)] });
-  if (cmd === "testwelcome3") return m.channel.send({ embeds: [buildWelcomeEmbed3(m.member)] });
+
+  if (cmd === "testwelcome2") {
+    // forced PURPLE welcome #1
+    return m.channel.send({
+      embeds: [buildWelcomeEmbed(m.member, PURPLE_ROLE, PURPLE_GIF)],
+      components: [rowLinks],
+    });
+  }
+
+  if (cmd === "testwelcome3") {
+    // welcome #3 (color rotates)
+    return m.channel.send({ embeds: [buildWelcomeEmbed3(m.member)] });
+  }
 
   /* ----- POSTS (EMBEDS STAY) ----- */
   if (cmd === "verify") {
@@ -431,7 +458,7 @@ client.on("messageCreate", async (m) => {
     }
   }
 
-  // alias: -sip gives pic perm role (PIC_PERM_ROLE env OR find role name includes "sip")
+  // alias: -sip gives pic perm role
   if (cmd === "sip") {
     let role = null;
 
@@ -462,16 +489,19 @@ client.on("messageCreate", async (m) => {
     autoDelete(sent, 5000);
     return;
   }
+
   if (cmd === "gif") {
     const r = await m.reply(rand(GIFS));
     autoDelete(r, 5000);
     return;
   }
+
   if (cmd === "8cup") {
     const r = await m.reply(`🎱 **${rand(EIGHT)}**`);
     autoDelete(r, 5000);
     return;
   }
+
   if (cmd === "pickup") {
     const r = await m.reply(rand(PICKUPS));
     autoDelete(r, 5000);
@@ -759,7 +789,12 @@ client.on("messageCreate", async (m) => {
       return;
     }
     const data = await fetch(`https://api.shrtco.de/v2/shorten?url=${encodeURIComponent(url)}`).then((r) => r.json()).catch(() => null);
-    const r = await m.reply(data?.ok ? data.result.full_short_link : "couldn’t shorten that");
+    if (!data?.ok) {
+      const r = await m.reply("couldn’t shorten that");
+      autoDelete(r, 5000);
+      return;
+    }
+    const r = await m.reply(data.result.full_short_link);
     autoDelete(r, 5000);
     return;
   }
@@ -786,7 +821,12 @@ client.on("messageCreate", async (m) => {
 
   if (cmd === "binary") {
     const txt = args.join(" ");
-    const r = await m.reply(txt ? txt.split("").map((c) => c.charCodeAt(0).toString(2)).join(" ") : `use: ${PREFIX}binary hello`);
+    if (!txt) {
+      const r = await m.reply(`use: ${PREFIX}binary hello`);
+      autoDelete(r, 5000);
+      return;
+    }
+    const r = await m.reply(txt.split("").map((c) => c.charCodeAt(0).toString(2)).join(" "));
     autoDelete(r, 5000);
     return;
   }
@@ -931,7 +971,7 @@ client.on("messageCreate", async (m) => {
       autoDelete(r, 5000);
       return;
     }
-    const time = ms(args[1] || "1m");
+    const time = ms(args[0] || "1m");
     await target.timeout(time).catch(() => {});
     const r = await m.reply(`${target.user.tag} muted for ${ms(time, { long: true })}`);
     autoDelete(r, 5000);
@@ -1034,7 +1074,7 @@ client.on("messageCreate", async (m) => {
           .setTitle("WOCKHARDT COMMANDS (Staff Only)")
           .setDescription(
             [
-              `**Welcomes Test:** -testwelcome1 -testwelcome2 -testwelcome3`,
+              `**Welcome Tests:** -testwelcome1 (RED) -testwelcome2 (PURPLE) -testwelcome3`,
               `**Posts:** -verify -verifycam`,
               `**Core:** -wock -sip -count -leaderboard -wockstats`,
               `**Fun:** -lean -gif -8cup -pickup -iq -ship -coinflip -roll -reverse -mock -emojify -drank`,
@@ -1042,7 +1082,7 @@ client.on("messageCreate", async (m) => {
               `**Tools:** -weather -translate -minecraft -qr -shorten -calc -binary -password`,
               `**Info:** -serverinfo -userinfo -avatar -emoji -servericon -channelinfo`,
               `**Mod:** -clear -say -embed -mute -unmute -slowmode -lock -unlock`,
-              `**Snipes:** -snipe -editsnipe`,
+              `**Snipes:** -afk -snipe -editsnipe`,
               `**Note:** Verify button is public • Embeds never delete`,
             ].join("\n")
           ),
@@ -1050,6 +1090,7 @@ client.on("messageCreate", async (m) => {
     });
   }
 
+  // Unknown command
   const r = await m.reply("unknown command");
   autoDelete(r, 5000);
 });
