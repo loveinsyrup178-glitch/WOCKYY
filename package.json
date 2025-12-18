@@ -1,12 +1,15 @@
 {
   "name": "wockhardt-bot",
   "version": "2.0.0",
-  "description": "Bleed-style bot: welcome, verify, 24/7 VC (optional), 60+ fun/mod/util commands, no economy",
+  "description": "WOCKHARDT bot: 2 welcomes, public verify button, staff-only dash commands (auto-delete), Railway-safe (no ffmpeg)",
   "main": "index.js",
   "type": "commonjs",
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js"
+  },
+  "engines": {
+    "node": ">=18.x"
   },
   "dependencies": {
     "discord.js": "^14.16.3",
@@ -20,10 +23,7 @@
   "devDependencies": {
     "nodemon": "^3.1.7"
   },
-  "engines": {
-    "node": ">=18.x"
-  },
-  "keywords": ["discord", "bot", "wock", "bleed", "railway"],
+  "keywords": ["discord", "bot", "wockhardt", "railway", "welcome", "verify"],
   "author": "you",
   "license": "MIT"
 }
