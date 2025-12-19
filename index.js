@@ -223,17 +223,22 @@ function buildWelcomeEmbed2(member) {
     .setTimestamp();
 }
 
-/* ✅ Welcome #3 embed stays for -testwelcome3 only */
+/* ✅ Welcome #3 (TEST ONLY) — simple style like your 1st screenshot */
 function buildWelcomeEmbed3(member) {
   const unix = Math.floor(Date.now() / 1000);
+
   return new EmbedBuilder()
-    .setColor(rand(WELCOME3_COLORS))
+    .setColor(rand(WELCOME3_COLORS)) // keep your rotating colors
     .setDescription(
-      `welc to /𐌕𐌕・𝐖𝐎𝐂𝐊𝐇𝐀𝐑𝐃𝐓 <:lean1:1451089899011964960>\n\n` +
+      [
+        `welc to /††・𝐖𝐎𝐂𝐊𝐇𝐀𝐑𝐃𝐓 📣`,
+        ``,
         `**${member.guild.memberCount} members** @ <t:${unix}:f>`
+      ].join("\n")
     )
-    .setThumbnail(member.guild.iconURL({ dynamic: true, size: 256 }) || null)
-    .setTimestamp();
+    // small image on the right (like the 1st screenshot)
+    .setThumbnail(member.user.displayAvatarURL({ dynamic: true, size: 256 }));
+    // IMPORTANT: no setAuthor, no setImage, no setFooter, no setTimestamp
 }
 
 function buildVerifyEmbed() {
