@@ -11,7 +11,7 @@
 
     ✅ Welcomes (ONLY 2 channels now):
       #1 ORIGINAL welcome (role rotation purple/red + matching gif + buttons) -> WELCOME_CH
-      #2 SECOND welcome (gif rotation + user avatar + guild icon + member count + timestamp) -> WELCOME_CH_2
+      #2 SECOND welcome (NO GIF • right-side user avatar • member count + date/time • color rotation green/orange/red/purple) -> WELCOME_CH_2
 
     ✅ Tests (forced) — STAY THE SAME:
       -testwelcome1 => forced RED welcome #1
@@ -205,22 +205,23 @@ function buildWelcomeEmbed(member, roleId, gif) {
     .setTimestamp();
 }
 
-// Welcome #2: gif rotation + user avatar + guild icon + membercount + timestamp
+/* ✅ Welcome #2 should look like your screenshot: NO GIF + right-side avatar + membercount/date + rotating colors */
 function buildWelcomeEmbed2(member) {
   const unix = Math.floor(Date.now() / 1000);
-  const gif = rand(WELCOME2_GIFS);
 
   return new EmbedBuilder()
-    .setColor(0x8b00ff)
-    .setDescription(`welc to /𐌕𐌕・𝐖𝐎𝐂𝐊𝐇𝐀𝐑𝐃𝐓 <:lean1:1451089899011964960>`)
-    .setThumbnail(member.user.displayAvatarURL({ dynamic: true, size: 256 }))
-    .setAuthor({
-      name: member.guild.name,
-      iconURL: member.guild.iconURL({ dynamic: true, size: 256 }) || undefined,
-    })
-    .setImage(gif)
-    .setFooter({ text: `${member.guild.memberCount} members @ <t:${unix}:f>` })
-    .setTimestamp();
+    .setColor(rand(WELCOME2_COLORS)) // 🔁 green/orange/red/purple
+    .setDescription(
+      [
+        `welc to /††・𝐖𝐎𝐂𝐊𝐇𝐀𝐑𝐃𝐓 📣`,
+        ``,
+        `**${member.guild.memberCount} members** @ <t:${unix}:F>`,
+        ``,
+        `Today at <t:${unix}:t>`,
+      ].join("\n")
+    )
+    .setThumbnail(member.user.displayAvatarURL({ dynamic: true, size: 256 }));
+    // IMPORTANT: no setAuthor, no setImage, no setFooter, no setTimestamp
 }
 
 /* ✅ Welcome #3 (TEST ONLY) — simple style like your 1st screenshot */
@@ -233,10 +234,9 @@ function buildWelcomeEmbed3(member) {
       [
         `welc to /††・𝐖𝐎𝐂𝐊𝐇𝐀𝐑𝐃𝐓 📣`,
         ``,
-        `**${member.guild.memberCount} members** @ <t:${unix}:f>`
+        `**${member.guild.memberCount} members** @ <t:${unix}:F>`,
       ].join("\n")
     )
-    // small image on the right (like the 1st screenshot)
     .setThumbnail(member.user.displayAvatarURL({ dynamic: true, size: 256 }));
     // IMPORTANT: no setAuthor, no setImage, no setFooter, no setTimestamp
 }
@@ -345,9 +345,9 @@ const rowLinks = new ActionRowBuilder().addComponents(
     .setStyle(ButtonStyle.Link)
     .setURL("https://discord.com/channels/1344613713608708168/1451498864350859264"),
   new ButtonBuilder()
-    .setLabel("MAIN CHAT")
+    .setLabel("WOCK LOUNGE")
     .setStyle(ButtonStyle.Link)
-    .setURL("https://discord.com/channels/1344613713608708168/1451496383537352786")
+    .setURL("https://discord.com/channels/1344613713608708168/1451152141589942303")
 );
 
 const rowVerify = new ActionRowBuilder().addComponents(
@@ -371,8 +371,16 @@ const PURPLE_GIF =
 const RED_GIF =
   "https://cdn.discordapp.com/attachments/1447035798930325574/1448684013458817117/705C1CE2-E35E-4FC5-9DFC-0F9B05CB1F52.gif";
 
-// Welcome #2 gif rotation
+// (kept in case you still want them for anything else, but Welcome #2 no longer uses gifs)
 const WELCOME2_GIFS = [PURPLE_GIF, RED_GIF];
+
+// ✅ Welcome #2 color rotation
+const WELCOME2_COLORS = [
+  0x00ff7f, // green
+  0xffa500, // orange
+  0xb00000, // red
+  0x8a2be2, // purple
+];
 
 // Welcome #3 color rotation (kept for -testwelcome3)
 const WELCOME3_COLORS = [
@@ -453,7 +461,7 @@ client.on("guildMemberAdd", async (m) => {
     ch1.send({ embeds: [buildWelcomeEmbed(m, pick, gif)], components: [rowLinks] }).catch(() => {});
   }
 
-  // send welcome #2
+  // send welcome #2 (NO GIF)
   const ch2 = m.guild.channels.cache.get(WELCOME_CH_2);
   if (ch2 && ch2.isTextBased()) {
     ch2.send({ embeds: [buildWelcomeEmbed2(m)] }).catch(() => {});
