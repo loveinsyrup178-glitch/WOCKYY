@@ -9,15 +9,14 @@
         - bot NON-EMBED messages
       (Embeds NEVER delete)
 
-    ✅ Welcomes (3 separate, NOT merged):
+    ✅ Welcomes (ONLY 2 channels now):
       #1 ORIGINAL welcome (role rotation purple/red + matching gif + buttons) -> WELCOME_CH
       #2 SECOND welcome (gif rotation + user avatar + guild icon + member count + timestamp) -> WELCOME_CH_2
-      #3 THIRD welcome (NO gif, text + guild icon + member count + timestamp, color rotation orange/green/red/purple) -> WELCOME_CH_3
 
-    ✅ Tests (forced):
+    ✅ Tests (forced) — STAY THE SAME:
       -testwelcome1 => forced RED welcome #1
       -testwelcome2 => forced PURPLE welcome #1
-      -testwelcome3 => welcome #3 (color rotates)
+      -testwelcome3 => welcome #3 (color rotates) (TEST ONLY, not auto-sent)
 
     ✅ Extra:
       -sip => gives PIC PERM role (PIC_PERM_ROLE id OR role name contains "sip")
@@ -49,17 +48,25 @@ const fetch = (...args) => import("node-fetch").then(({ default: f }) => f(...ar
 /* ---------- CONFIG ---------- */
 const PREFIX = "-";
 
-const WELCOME_CH = process.env.WELCOME_CH || "1446420100822335633"; // Welcome #1
-const WELCOME_CH_2 = process.env.WELCOME_CH_2 || "1447035798930325574"; // Welcome #2
-const WELCOME_CH_3 = process.env.WELCOME_CH_3 || "1447035798930325574"; // Welcome #3
+/* ✅ NEW SERVER + ONLY 2 WELCOME CHANNELS */
+const GUILD_ID = process.env.GUILD_ID || "1344613713608708168";
 
-const VERIFY_CH = process.env.VERIFY_CH || "1449275035020689458";
-const IDLE_VC_ID = process.env.IDLE_VC_ID || "1447154877150265466";
+const WELCOME_CH = process.env.WELCOME_CH || "1411843153090183259"; // Welcome #1
+const WELCOME_CH_2 = process.env.WELCOME_CH_2 || "1451496383537352786"; // Welcome #2
 
-const PURPLE_ROLE = process.env.PURPLE_ROLE || "1448654794259435614";
-const RED_ROLE = process.env.RED_ROLE || "1448654699187277875";
+const VERIFY_CH = process.env.VERIFY_CH || "1439034515052957918";
 
-const GUILD_ID = process.env.GUILD_ID || ""; // recommended
+/* ✅ Idle VC N/A (leave voice off) */
+const IDLE_VC_ID = process.env.IDLE_VC_ID || "";
+
+/* ✅ NEW ROLES */
+const PURPLE_ROLE = process.env.PURPLE_ROLE || "1451496839344951339";
+const RED_ROLE = process.env.RED_ROLE || "1451496910165774398";
+const PIC_PERM_ROLE = process.env.PIC_PERM_ROLE || "1451151326795927755";
+
+/* ✅ Verified role ID (more reliable than name) */
+const VERIFIED_ROLE_ID = process.env.VERIFIED_ROLE || "1439037116695969944";
+
 const TOKEN = process.env.TOKEN;
 
 // staff lock
@@ -69,31 +76,19 @@ const MOD_ROLE_IDS = (process.env.MOD_ROLE_IDS || "")
   .map((s) => s.trim())
   .filter(Boolean);
 
-// pic perm role for -sip
-const PIC_PERM_ROLE = process.env.PIC_PERM_ROLE || "";
-
 if (!TOKEN) throw new Error("Missing TOKEN (set it in Railway Variables or .env)");
 
 /* ---------- COLOR ROLES (ENV) ---------- */
-/*
-  Set these in Railway Variables (role IDs from THIS server):
-  COLOR_ROLE_RED
-  COLOR_ROLE_ORANGE
-  COLOR_ROLE_BLUE
-  COLOR_ROLE_YELLOW
-  COLOR_ROLE_GREEN
-  COLOR_ROLE_PURPLE
-*/
 const COLOR_ROLES = {
-  red: process.env.COLOR_ROLE_RED || "",
-  orange: process.env.COLOR_ROLE_ORANGE || "",
-  blue: process.env.COLOR_ROLE_BLUE || "",
-  yellow: process.env.COLOR_ROLE_YELLOW || "",
-  green: process.env.COLOR_ROLE_GREEN || "",
-  purple: process.env.COLOR_ROLE_PURPLE || "",
+  red: process.env.COLOR_ROLE_RED || "1375908139437654036",
+  orange: process.env.COLOR_ROLE_ORANGE || "1396585301845082162",
+  blue: process.env.COLOR_ROLE_BLUE || "1375908379469414480",
+  yellow: process.env.COLOR_ROLE_YELLOW || "1375908573707501658",
+  green: process.env.COLOR_ROLE_GREEN || "1375908478832607252",
+  purple: process.env.COLOR_ROLE_PURPLE || "1375908639671455907",
 };
 
-// your custom emojis (already perfect)
+// your custom emojis
 const COLOR_EMOJIS = {
   red: "<:emoji_315:1451264887513682101>",
   orange: "<:emoji_316:1451264991188488296>",
@@ -171,6 +166,8 @@ function isStaff(m) {
 /* ---------- 24/7 VC (OPTIONAL) ---------- */
 async function joinIdleVC(guild) {
   if (!voice) return;
+  if (!IDLE_VC_ID) return;
+
   try {
     const { joinVoiceChannel } = voice;
 
@@ -226,7 +223,7 @@ function buildWelcomeEmbed2(member) {
     .setTimestamp();
 }
 
-// Welcome #3: NO GIF, text + guild icon + membercount + timestamp, color rotates
+/* ✅ Welcome #3 embed stays for -testwelcome3 only */
 function buildWelcomeEmbed3(member) {
   const unix = Math.floor(Date.now() / 1000);
   return new EmbedBuilder()
@@ -272,7 +269,7 @@ function buildWockhardtVerifyEmbed2() {
         "",
         "↳ Open a ticket below",
         "",
-        "Tag a staff member in chat after they see you on cam."
+        "Tag a staff member in chat after they see you on cam.",
       ].join("\n")
     )
     .setTimestamp();
@@ -311,43 +308,15 @@ function buildColorRolesEmbed() {
 
 function buildColorRoleButtons() {
   const row1 = new ActionRowBuilder().addComponents(
-    new ButtonBuilder()
-      .setCustomId("color_red")
-      .setLabel("RED")
-      .setEmoji("1451264887513682101")
-      .setStyle(ButtonStyle.Secondary),
-
-    new ButtonBuilder()
-      .setCustomId("color_orange")
-      .setLabel("ORANGE")
-      .setEmoji("1451264991188488296")
-      .setStyle(ButtonStyle.Secondary),
-
-    new ButtonBuilder()
-      .setCustomId("color_blue")
-      .setLabel("BLUE")
-      .setEmoji("1451265073866870937")
-      .setStyle(ButtonStyle.Secondary)
+    new ButtonBuilder().setCustomId("color_red").setLabel("RED").setEmoji("1451264887513682101").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId("color_orange").setLabel("ORANGE").setEmoji("1451264991188488296").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId("color_blue").setLabel("BLUE").setEmoji("1451265073866870937").setStyle(ButtonStyle.Secondary)
   );
 
   const row2 = new ActionRowBuilder().addComponents(
-    new ButtonBuilder()
-      .setCustomId("color_yellow")
-      .setLabel("YELLOW")
-      .setEmoji("1451265135007240225")
-      .setStyle(ButtonStyle.Secondary),
-
-    new ButtonBuilder()
-      .setCustomId("color_green")
-      .setLabel("GREEN")
-      .setEmoji("1451265183014977537")
-      .setStyle(ButtonStyle.Secondary),
-
-    new ButtonBuilder()
-      .setCustomId("color_purple")
-      .setLabel("PURPLE")
-      .setEmoji("1451265302435205325")
-      .setStyle(ButtonStyle.Secondary)
+    new ButtonBuilder().setCustomId("color_yellow").setLabel("YELLOW").setEmoji("1451265135007240225").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId("color_green").setLabel("GREEN").setEmoji("1451265183014977537").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId("color_purple").setLabel("PURPLE").setEmoji("1451265302435205325").setStyle(ButtonStyle.Secondary)
   );
 
   const rows = [row1, row2];
@@ -355,10 +324,7 @@ function buildColorRoleButtons() {
   if (ENABLE_COLOR_CLEAR) {
     rows.push(
       new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setCustomId("color_clear")
-          .setLabel("REMOVE COLOR")
-          .setStyle(ButtonStyle.Danger)
+        new ButtonBuilder().setCustomId("color_clear").setLabel("REMOVE COLOR").setStyle(ButtonStyle.Danger)
       )
     );
   }
@@ -367,12 +333,16 @@ function buildColorRoleButtons() {
 }
 
 /* ---------- BUTTONS ---------- */
+/* ✅ UPDATED to NEW server/channel links */
 const rowLinks = new ActionRowBuilder().addComponents(
-  new ButtonBuilder().setLabel("CREATE VC").setStyle(ButtonStyle.Link).setURL("https://discord.gg/AV58C6AwT"),
+  new ButtonBuilder()
+    .setLabel("CREATE VC")
+    .setStyle(ButtonStyle.Link)
+    .setURL("https://discord.com/channels/1344613713608708168/1451498864350859264"),
   new ButtonBuilder()
     .setLabel("MAIN CHAT")
     .setStyle(ButtonStyle.Link)
-    .setURL("https://discord.com/channels/1446420100151382131/1446428371595821167")
+    .setURL("https://discord.com/channels/1344613713608708168/1451152141589942303")
 );
 
 const rowVerify = new ActionRowBuilder().addComponents(
@@ -399,7 +369,7 @@ const RED_GIF =
 // Welcome #2 gif rotation
 const WELCOME2_GIFS = [PURPLE_GIF, RED_GIF];
 
-// Welcome #3 color rotation
+// Welcome #3 color rotation (kept for -testwelcome3)
 const WELCOME3_COLORS = [
   0xffa500, // orange
   0x00ff7f, // green
@@ -463,7 +433,7 @@ client.once("ready", async () => {
   }
 });
 
-/* ---------- MEMBER JOIN (3 WELCOMES) ---------- */
+/* ---------- MEMBER JOIN (ONLY 2 WELCOMES) ---------- */
 client.on("guildMemberAdd", async (m) => {
   // welcome #1: role rotation
   const roles = [PURPLE_ROLE, RED_ROLE];
@@ -484,11 +454,7 @@ client.on("guildMemberAdd", async (m) => {
     ch2.send({ embeds: [buildWelcomeEmbed2(m)] }).catch(() => {});
   }
 
-  // send welcome #3 (NO GIF)
-  const ch3 = m.guild.channels.cache.get(WELCOME_CH_3);
-  if (ch3 && ch3.isTextBased()) {
-    ch3.send({ embeds: [buildWelcomeEmbed3(m)] }).catch(() => {});
-  }
+  // ✅ Welcome #3 REMOVED from auto-join (test command still exists)
 });
 
 /* ---------- SNIPE LISTENERS ---------- */
@@ -530,23 +496,15 @@ client.on("messageCreate", async (m) => {
 
   /* ----- TEST WELCOMES (FORCED) ----- */
   if (cmd === "testwelcome1") {
-    // forced RED welcome #1
-    return m.channel.send({
-      embeds: [buildWelcomeEmbed(m.member, RED_ROLE, RED_GIF)],
-      components: [rowLinks],
-    });
+    return m.channel.send({ embeds: [buildWelcomeEmbed(m.member, RED_ROLE, RED_GIF)], components: [rowLinks] });
   }
 
   if (cmd === "testwelcome2") {
-    // forced PURPLE welcome #1
-    return m.channel.send({
-      embeds: [buildWelcomeEmbed(m.member, PURPLE_ROLE, PURPLE_GIF)],
-      components: [rowLinks],
-    });
+    return m.channel.send({ embeds: [buildWelcomeEmbed(m.member, PURPLE_ROLE, PURPLE_GIF)], components: [rowLinks] });
   }
 
+  // ✅ testwelcome3 stays the same (it just posts in the channel you run it in)
   if (cmd === "testwelcome3") {
-    // welcome #3 (color rotates)
     return m.channel.send({ embeds: [buildWelcomeEmbed3(m.member)] });
   }
 
@@ -561,10 +519,7 @@ client.on("messageCreate", async (m) => {
 
   /* ----- COLOR ROLES PANEL (EMBEDS STAY) ----- */
   if (cmd === "colors" || cmd === "testcolors") {
-    return m.channel.send({
-      embeds: [buildColorRolesEmbed()],
-      components: buildColorRoleButtons(),
-    });
+    return m.channel.send({ embeds: [buildColorRolesEmbed()], components: buildColorRoleButtons() });
   }
 
   /* ----- CORE ----- */
@@ -736,7 +691,7 @@ client.on("messageCreate", async (m) => {
       purp: g.roles.cache.get(PURPLE_ROLE)?.members.size || 0,
       red: g.roles.cache.get(RED_ROLE)?.members.size || 0,
       wock: g.roles.cache.find((r) => r.name.toLowerCase() === "wock")?.members.size || 0,
-      verified: g.roles.cache.find((r) => r.name.toLowerCase() === "verified")?.members.size || 0,
+      verified: VERIFIED_ROLE_ID ? (g.roles.cache.get(VERIFIED_ROLE_ID)?.members.size || 0) : 0,
     };
 
     return m.channel.send({
@@ -996,36 +951,28 @@ client.on("messageCreate", async (m) => {
   }
 
   if (cmd === "userinfo") {
-  const u = m.mentions.users.first() || m.author;
-  const mm = await m.guild.members.fetch(u.id).catch(() => null);
+    const u = m.mentions.users.first() || m.author;
+    const mm = await m.guild.members.fetch(u.id).catch(() => null);
 
-  if (!mm) {
-    const r = await m.reply("user not found");
-    autoDelete(r, 5000);
-    return;
+    if (!mm) {
+      const r = await m.reply("user not found");
+      autoDelete(r, 5000);
+      return;
+    }
+
+    return m.reply({
+      embeds: [
+        new EmbedBuilder()
+          .setColor(0x8b00ff)
+          .setTitle(u.tag)
+          .addFields(
+            { name: "Joined", value: mm.joinedAt ? mm.joinedAt.toDateString() : "—", inline: true },
+            { name: "Created", value: u.createdAt ? u.createdAt.toDateString() : "—", inline: true }
+          )
+          .setThumbnail(u.displayAvatarURL({ dynamic: true })),
+      ],
+    });
   }
-
-  return m.reply({
-    embeds: [
-      new EmbedBuilder()
-        .setColor(0x8b00ff)
-        .setTitle(u.tag)
-        .addFields(
-          {
-            name: "Joined",
-            value: mm.joinedAt ? mm.joinedAt.toDateString() : "—",
-            inline: true,
-          },
-          {
-            name: "Created",
-            value: u.createdAt ? u.createdAt.toDateString() : "—",
-            inline: true,
-          }
-        )
-        .setThumbnail(u.displayAvatarURL({ dynamic: true })),
-    ],
-  });
-}
 
   if (cmd === "avatar") {
     const u = m.mentions.users.first() || m.author;
@@ -1248,7 +1195,8 @@ client.on("interactionCreate", async (i) => {
 
   /* ----- VERIFY BUTTON ----- */
   if (i.customId === "verify_btn") {
-    const role = i.guild.roles.cache.find((r) => r.name.toLowerCase() === "verified");
+    const role = VERIFIED_ROLE_ID ? i.guild.roles.cache.get(VERIFIED_ROLE_ID) : null;
+
     if (!role) return i.reply({ content: "⚠️ Verified role not found.", ephemeral: true });
     if (i.member.roles.cache.has(role.id)) return i.reply({ content: "You're already verified.", ephemeral: true });
 
@@ -1271,8 +1219,7 @@ client.on("interactionCreate", async (i) => {
   const roleIdToAdd = COLOR_ROLES[key];
   if (!roleIdToAdd) {
     return i.reply({
-      content:
-        "⚠️ Color roles not set. Add Railway env vars: COLOR_ROLE_RED/ORANGE/BLUE/YELLOW/GREEN/PURPLE",
+      content: "⚠️ Color roles not set. Add Railway env vars: COLOR_ROLE_RED/ORANGE/BLUE/YELLOW/GREEN/PURPLE",
       ephemeral: true,
     });
   }
