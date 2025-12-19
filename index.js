@@ -342,7 +342,7 @@ const rowLinks = new ActionRowBuilder().addComponents(
   new ButtonBuilder()
     .setLabel("MAIN CHAT")
     .setStyle(ButtonStyle.Link)
-    .setURL("https://discord.com/channels/1344613713608708168/1451152141589942303")
+    .setURL("https://discord.com/channels/1344613713608708168/1451496383537352786")
 );
 
 const rowVerify = new ActionRowBuilder().addComponents(
