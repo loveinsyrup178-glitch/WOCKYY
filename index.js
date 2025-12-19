@@ -996,26 +996,36 @@ client.on("messageCreate", async (m) => {
   }
 
   if (cmd === "userinfo") {
-    const u = m.mentions.users.first() || m.author;
-    const mm = await m.guild.members.fetch(u.id).catch(() => null);
-    if (!mm) {
-      const r = await m.reply("user not found");
-      autoDelete(r, 5000);
-      return;
-    }
-    return m.reply({
-      embeds: [
-        new EmbedBuilder()
-          .setColor(0x8b00ff)
-          .setTitle(u.tag)
-          .addFields(
-            { name: "Joined", value: mm.joinedAt ? mm.joinedAt.toDateString() : "—", inline: true },
-            { name: "Created", value: u.createdAt.toDateString() : "—", inline: true }
-          )
-          .setThumbnail(u.displayAvatarURL({ dynamic: true })),
-      ],
-    });
+  const u = m.mentions.users.first() || m.author;
+  const mm = await m.guild.members.fetch(u.id).catch(() => null);
+
+  if (!mm) {
+    const r = await m.reply("user not found");
+    autoDelete(r, 5000);
+    return;
   }
+
+  return m.reply({
+    embeds: [
+      new EmbedBuilder()
+        .setColor(0x8b00ff)
+        .setTitle(u.tag)
+        .addFields(
+          {
+            name: "Joined",
+            value: mm.joinedAt ? mm.joinedAt.toDateString() : "—",
+            inline: true,
+          },
+          {
+            name: "Created",
+            value: u.createdAt ? u.createdAt.toDateString() : "—",
+            inline: true,
+          }
+        )
+        .setThumbnail(u.displayAvatarURL({ dynamic: true })),
+    ],
+  });
+}
 
   if (cmd === "avatar") {
     const u = m.mentions.users.first() || m.author;
