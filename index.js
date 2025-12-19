@@ -345,9 +345,9 @@ const rowLinks = new ActionRowBuilder().addComponents(
     .setStyle(ButtonStyle.Link)
     .setURL("https://discord.com/channels/1344613713608708168/1451498864350859264"),
   new ButtonBuilder()
-    .setLabel("WOCK LOUNGE")
+    .setLabel("MAIN CHAT")
     .setStyle(ButtonStyle.Link)
-    .setURL("https://discord.com/channels/1344613713608708168/1451152141589942303")
+    .setURL("https://discord.com/channels/1344613713608708168/1381307499461869659")
 );
 
 const rowVerify = new ActionRowBuilder().addComponents(
