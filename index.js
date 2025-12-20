@@ -214,11 +214,15 @@ function buildWelcomeEmbed2(member) {
       [
         `welc to /††・𝐖𝐎𝐂𝐊𝐇𝐀𝐑𝐃𝐓 📣`,
         ``,
-        `**Welcome ${member.user} 🍇**`,
+        `**Welcome ${member.displayName} 🍇**`,
         ``,
         `**${member.guild.memberCount} members** @ <t:${unix}:f>`
       ].join("\n")
     )
+    // dynamic:true makes GIF pfps animate if they have one
+    .setThumbnail(member.user.displayAvatarURL({ dynamic: true, size: 256 }));
+  // IMPORTANT: no .setTimestamp() (removes that extra “Today at …” line inside the embed)
+}
     // 🔒 LOCKED size (most consistent Discord allows)
     .setThumbnail(
       member.user.displayAvatarURL({
