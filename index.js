@@ -2,6 +2,9 @@
     Prefix: - | discord.js v14
 
     ✅ Commands: STAFF ONLY (Owner/Admin/Mods)
+    ✅ PUBLIC EXCEPTION:
+        -sip (gives PIC PERM role)
+
     ✅ Buttons: PUBLIC (verify button + color role buttons work for everyone)
 
     ✅ Auto delete after 5s:
@@ -19,7 +22,7 @@
       -testwelcome3 => welcome #3 (color rotates) (TEST ONLY, not auto-sent)
 
     ✅ Extra:
-      -sip => gives PIC PERM role (PIC_PERM_ROLE id OR role name contains "sip")
+      -sip => gives PIC PERM role (PUBLIC)
       -verifycam => sends the orange cam/selfie verify embed (emoji <:omgdghhg:1451163968377978902> only)
 
     ✅ Color Roles Panel:
@@ -197,16 +200,18 @@ function buildWelcomeEmbed(member, roleId, gif) {
       `𝘞𝘦𝘭𝘤𝘰𝘮𝘦 𝘵𝘰 𝘵𝘩𝘦 𝘞𝘰𝘤𝘬 𝘡𝘰𝘯𝘦, ${member}\n\n` +
         `✦ 𝘴𝘵𝘢𝘺 𝘢𝘤𝘵𝘪𝘷𝘦\n` +
         `✦ 𝘪𝘯𝘷 𝟯 𝘧𝘰𝘳 𝘱𝘦𝘳𝘮𝘴\n` +
-        `✦ 𝘧𝘦𝘦𝘭 𝘢𝘵 𝘩𝘰𝘮𝘦`
+        `✦ -Sip 𝘧𝘰𝘳 𝘗𝘪𝘤 𝘗𝘦𝘳𝘮𝘴`
     )
     .setImage(gif)
     .setColor(color)
-    .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
+    .setThumbnail(member.user.displayAvatarURL({ dynamic: true, size: 128 }))
     .setTimestamp();
 }
 
+/* ✅ FIXED Welcome #2 (NO GIF, mention works, same thumbnail size always) */
 function buildWelcomeEmbed2(member) {
   const unix = Math.floor(Date.now() / 1000);
+  const mention = `<@${member.id}>`;
 
   return new EmbedBuilder()
     .setColor(rand(WELCOME3_COLORS)) // green / orange / red / purple
@@ -214,29 +219,21 @@ function buildWelcomeEmbed2(member) {
       [
         `welc to /††・𝐖𝐎𝐂𝐊𝐇𝐀𝐑𝐃𝐓 📣`,
         ``,
-        `**Welcome ${member.displayName} 🍇**`,
+        `**Welcome ${mention} 🍇**`,
         ``,
-        `**${member.guild.memberCount} members** @ <t:${unix}:f>`
+        `**${member.guild.memberCount} members** @ <t:${unix}:f>`,
       ].join("\n")
     )
-    // dynamic:true makes GIF pfps animate if they have one
-    .setThumbnail(member.user.displayAvatarURL({ dynamic: true, size: 256 }));
-  // IMPORTANT: no .setTimestamp() (removes that extra “Today at …” line inside the embed)
+    .setThumbnail(member.user.displayAvatarURL({ dynamic: true, size: 128 }));
+  // IMPORTANT: no .setTimestamp()
 }
-    // 🔒 LOCKED size (most consistent Discord allows)
-    .setThumbnail(
-      member.user.displayAvatarURL({
-        dynamic: true,
-        size: 128
-      })
-    );
-}
-/* ✅ Welcome #3 (TEST ONLY) — simple style like your 1st screenshot */
+
+/* ✅ Welcome #3 (TEST ONLY) — simple style like your screenshot */
 function buildWelcomeEmbed3(member) {
   const unix = Math.floor(Date.now() / 1000);
 
   return new EmbedBuilder()
-    .setColor(rand(WELCOME3_COLORS)) // keep your rotating colors
+    .setColor(rand(WELCOME3_COLORS))
     .setDescription(
       [
         `welc to /††・𝐖𝐎𝐂𝐊𝐇𝐀𝐑𝐃𝐓 📣`,
@@ -244,8 +241,7 @@ function buildWelcomeEmbed3(member) {
         `**${member.guild.memberCount} members** @ <t:${unix}:F>`,
       ].join("\n")
     )
-    .setThumbnail(member.user.displayAvatarURL({ dynamic: true, size: 256 }));
-    // IMPORTANT: no setAuthor, no setImage, no setFooter, no setTimestamp
+    .setThumbnail(member.user.displayAvatarURL({ dynamic: true, size: 128 }));
 }
 
 function buildVerifyEmbed() {
@@ -378,18 +374,7 @@ const PURPLE_GIF =
 const RED_GIF =
   "https://cdn.discordapp.com/attachments/1447035798930325574/1448684013458817117/705C1CE2-E35E-4FC5-9DFC-0F9B05CB1F52.gif";
 
-// (kept in case you still want them for anything else, but Welcome #2 no longer uses gifs)
-const WELCOME2_GIFS = [PURPLE_GIF, RED_GIF];
-
-// ✅ Welcome #2 color rotation
-const WELCOME2_COLORS = [
-  0x00ff7f, // green
-  0xffa500, // orange
-  0xb00000, // red
-  0x8a2be2, // purple
-];
-
-// Welcome #3 color rotation (kept for -testwelcome3)
+// Welcome #3 / Welcome #2 rotation colors
 const WELCOME3_COLORS = [
   0xffa500, // orange
   0x00ff7f, // green
@@ -468,13 +453,15 @@ client.on("guildMemberAdd", async (m) => {
     ch1.send({ embeds: [buildWelcomeEmbed(m, pick, gif)], components: [rowLinks] }).catch(() => {});
   }
 
-  // send welcome #2 (NO GIF)
+  // send welcome #2 (NO GIF) + true mention ping
   const ch2 = m.guild.channels.cache.get(WELCOME_CH_2);
   if (ch2 && ch2.isTextBased()) {
-    ch2.send({ embeds: [buildWelcomeEmbed2(m)] }).catch(() => {});
+    ch2.send({
+      content: `**Welcome <@${m.id}> 🍇**`,
+      allowedMentions: { users: [m.id] },
+      embeds: [buildWelcomeEmbed2(m)],
+    }).catch(() => {});
   }
-
-  // ✅ Welcome #3 REMOVED from auto-join (test command still exists)
 });
 
 /* ---------- SNIPE LISTENERS ---------- */
@@ -507,7 +494,29 @@ client.on("messageCreate", async (m) => {
   const args = m.content.slice(PREFIX.length).trim().split(/\s+/);
   const cmd = (args.shift() || "").toLowerCase();
 
-  // staff gate (ALL commands staff-only)
+  /* ✅ PUBLIC: -sip (ONLY sip exists now, not duplicated anywhere) */
+  if (cmd === "sip") {
+    const role = m.guild.roles.cache.get(PIC_PERM_ROLE) || null;
+
+    if (!role) {
+      const r = await m.reply("Pic perm role not found. Set PIC_PERM_ROLE correctly.");
+      autoDelete(r, 5000);
+      return;
+    }
+
+    if (m.member.roles.cache.has(role.id)) {
+      const r = await m.reply("You already got pic perms 🥤");
+      autoDelete(r, 5000);
+      return;
+    }
+
+    await m.member.roles.add(role).catch(() => {});
+    const r = await m.reply("🥤 Pic perms unlocked.");
+    autoDelete(r, 5000);
+    return;
+  }
+
+  // staff gate (ALL other commands staff-only)
   if (!isStaff(m)) {
     const warn = await m.reply("🚫 Staff only.");
     autoDelete(warn, 5000);
@@ -567,31 +576,6 @@ client.on("messageCreate", async (m) => {
       autoDelete(r, 5000);
       return;
     }
-  }
-
-  // alias: -sip gives pic perm role
-  if (cmd === "sip") {
-    let role = null;
-
-    if (PIC_PERM_ROLE) role = m.guild.roles.cache.get(PIC_PERM_ROLE) || null;
-    if (!role) role = m.guild.roles.cache.find((r) => r.name.toLowerCase().includes("sip")) || null;
-
-    if (!role) {
-      const r = await m.reply("Pic perm role not found. Set PIC_PERM_ROLE or name the role with 'sip'.");
-      autoDelete(r, 5000);
-      return;
-    }
-
-    if (m.member.roles.cache.has(role.id)) {
-      const r = await m.reply("You already got pic perms 🥤");
-      autoDelete(r, 5000);
-      return;
-    }
-
-    await m.member.roles.add(role).catch(() => {});
-    const r = await m.reply("🥤 Pic perms unlocked.");
-    autoDelete(r, 5000);
-    return;
   }
 
   /* FUN */
@@ -1184,19 +1168,21 @@ client.on("messageCreate", async (m) => {
       embeds: [
         new EmbedBuilder()
           .setColor(0x8b00ff)
-          .setTitle("WOCKHARDT COMMANDS (Staff Only)")
+          .setTitle("WOCKHARDT COMMANDS")
           .setDescription(
             [
-              `**Welcome Tests:** -testwelcome1 (RED) -testwelcome2 (PURPLE) -testwelcome3`,
-              `**Posts:** -verify -verifycam`,
-              `**Color Roles:** -colors (-testcolors)`,
-              `**Core:** -wock -sip -count -leaderboard -wockstats`,
-              `**Fun:** -lean -gif -8cup -pickup -iq -ship -coinflip -roll -reverse -mock -emojify -drank`,
-              `**Social:** -compliment -insult -dadjoke -quote -fact`,
-              `**Tools:** -weather -translate -minecraft -qr -shorten -calc -binary -password`,
-              `**Info:** -serverinfo -userinfo -avatar -emoji -servericon -channelinfo`,
-              `**Mod:** -clear -say -embed -mute -unmute -slowmode -lock -unlock`,
-              `**Snipes:** -afk -snipe -editsnipe`,
+              `**Public:** -sip`,
+              ``,
+              `**Welcome Tests (Staff):** -testwelcome1 (RED) -testwelcome2 (PURPLE) -testwelcome3`,
+              `**Posts (Staff):** -verify -verifycam`,
+              `**Color Roles (Staff posts panel):** -colors (-testcolors)`,
+              `**Core (Staff):** -wock -count -leaderboard -wockstats`,
+              `**Fun (Staff):** -lean -gif -8cup -pickup -iq -ship -coinflip -roll -reverse -mock -emojify -drank`,
+              `**Social (Staff):** -compliment -insult -dadjoke -quote -fact`,
+              `**Tools (Staff):** -weather -translate -minecraft -qr -shorten -calc -binary -password`,
+              `**Info (Staff):** -serverinfo -userinfo -avatar -emoji -servericon -channelinfo`,
+              `**Mod (Staff):** -clear -say -embed -mute -unmute -slowmode -lock -unlock`,
+              `**Snipes (Staff):** -afk -snipe -editsnipe`,
               `**Note:** Verify + color buttons are public • Embeds never delete`,
             ].join("\n")
           ),
