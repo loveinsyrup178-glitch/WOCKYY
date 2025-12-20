@@ -205,25 +205,24 @@ function buildWelcomeEmbed(member, roleId, gif) {
     .setTimestamp();
 }
 
-/* ✅ Welcome #2 should look like your screenshot: NO GIF + right-side avatar + membercount/date + rotating colors */
 function buildWelcomeEmbed2(member) {
   const unix = Math.floor(Date.now() / 1000);
 
   return new EmbedBuilder()
-    .setColor(rand(WELCOME2_COLORS)) // 🔁 green/orange/red/purple
+    .setColor(rand(WELCOME3_COLORS)) // green / orange / red / purple
     .setDescription(
       [
         `welc to /††・𝐖𝐎𝐂𝐊𝐇𝐀𝐑𝐃𝐓 📣`,
         ``,
-        `**${member.guild.memberCount} members** @ <t:${unix}:F>`,
+        `**Welcome ${member} 🍇**`,
         ``,
-        `Today at <t:${unix}:t>`,
+        `**${member.guild.memberCount} members** @ <t:${unix}:f>`
       ].join("\n")
     )
-    .setThumbnail(member.user.displayAvatarURL({ dynamic: true, size: 256 }));
-    // IMPORTANT: no setAuthor, no setImage, no setFooter, no setTimestamp
+    .setThumbnail(
+      member.user.displayAvatarURL({ dynamic: true, size: 256 })
+    );
 }
-
 /* ✅ Welcome #3 (TEST ONLY) — simple style like your 1st screenshot */
 function buildWelcomeEmbed3(member) {
   const unix = Math.floor(Date.now() / 1000);
