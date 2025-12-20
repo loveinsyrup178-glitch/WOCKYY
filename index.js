@@ -214,13 +214,17 @@ function buildWelcomeEmbed2(member) {
       [
         `welc to /††・𝐖𝐎𝐂𝐊𝐇𝐀𝐑𝐃𝐓 📣`,
         ``,
-        `**Welcome ${member} 🍇**`,
+        `**Welcome ${member.user} 🍇**`,
         ``,
         `**${member.guild.memberCount} members** @ <t:${unix}:f>`
       ].join("\n")
     )
+    // 🔒 LOCKED size (most consistent Discord allows)
     .setThumbnail(
-      member.user.displayAvatarURL({ dynamic: true, size: 256 })
+      member.user.displayAvatarURL({
+        dynamic: true,
+        size: 128
+      })
     );
 }
 /* ✅ Welcome #3 (TEST ONLY) — simple style like your 1st screenshot */
