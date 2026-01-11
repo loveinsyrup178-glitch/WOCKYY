@@ -697,39 +697,39 @@ client.on("messageCreate", async (m) => {
       wock: g.roles.cache.find((r) => r.name.toLowerCase() === "wock")?.members.size || 0,
       verified: VERIFIED_ROLE_ID ? (g.roles.cache.get(VERIFIED_ROLE_ID)?.members.size || 0) : 0,
     };
-// ===============================
-// GUARANTEED OWNER CLEARMY COMMAND
-// ===============================
+/* ===============================
+   OWNER CLEARMY COMMAND
+   =============================== */
+if (cmd === "clearmy") {
+  // Only bot owner can run
+  if (m.author.id !== OWNER_ID) return;
 
-const OWNER_ID = "1277264433823088692";
-
-client.on("messageCreate", async (message) => {
-  if (message.author.bot || !message.guild) return;
-
-  // HARD MATCH — nothing else can block this
-  if (!message.content.toLowerCase().startsWith("-clearmy")) return;
-
-  if (message.author.id !== OWNER_ID) return;
-
-  const args = message.content.split(/ +/);
-  const amount = Math.min(parseInt(args[1]) || 25, 100);
+  // Amount to delete (default 25, max 100)
+  const amount = Math.min(parseInt(args[0]) || 25, 100);
 
   try {
-    const fetched = await message.channel.messages.fetch({ limit: 100 });
+    // Fetch last 100 messages in channel
+    const fetched = await m.channel.messages.fetch({ limit: 100 });
 
-    const myMessages = fetched
-      .filter(m => m.author.id === OWNER_ID)
-      .first(amount);
+    // Filter only messages from OWNER_ID
+    const myMessages = fetched.filter(msg => msg.author.id === OWNER_ID).first(amount);
 
-    await message.delete().catch(() => {});
+    // Delete the command message itself
+    await m.delete().catch(() => {});
 
     if (!myMessages.length) return;
 
-    await message.channel.bulkDelete(myMessages, true).catch(() => {});
+    // Bulk delete messages
+    await m.channel.bulkDelete(myMessages, true).catch(() => {});
+
+    const confirm = await m.channel.send(`🧹 Deleted **${myMessages.length}** of my messages.`);
+    autoDelete(confirm, 5000);
   } catch (e) {
     console.error("CLEARMY ERROR:", e);
+    const errMsg = await m.channel.send("❌ Failed to clear messages.");
+    autoDelete(errMsg, 5000);
   }
-});
+}
     return m.channel.send({
       embeds: [
         new EmbedBuilder()
