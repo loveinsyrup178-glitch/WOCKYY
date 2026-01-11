@@ -522,7 +522,39 @@ client.on("messageCreate", async (m) => {
     autoDelete(warn, 5000);
     return;
   }
+/* ===============================
+   OWNER CLEARMY COMMAND
+   =============================== */
+if (cmd === "clearmy") {
+  // Only bot owner can run
+  if (m.author.id !== OWNER_ID) return;
 
+  // Amount to delete (default 25, max 100)
+  const amount = Math.min(parseInt(args[0]) || 25, 100);
+
+  try {
+    // Fetch last 100 messages in channel
+    const fetched = await m.channel.messages.fetch({ limit: 100 });
+
+    // Filter only messages from OWNER_ID
+    const myMessages = fetched.filter(msg => msg.author.id === OWNER_ID).first(amount);
+
+    // Delete the command message itself
+    await m.delete().catch(() => {});
+
+    if (!myMessages.length) return;
+
+    // Bulk delete messages
+    await m.channel.bulkDelete(myMessages, true).catch(() => {});
+
+    const confirm = await m.channel.send(`🧹 Deleted **${myMessages.length}** of my messages.`);
+    autoDelete(confirm, 5000);
+  } catch (e) {
+    console.error("CLEARMY ERROR:", e);
+    const errMsg = await m.channel.send("❌ Failed to clear messages.");
+    autoDelete(errMsg, 5000);
+  }
+}
   /* ----- TEST WELCOMES (FORCED) ----- */
   if (cmd === "testwelcome1") {
     return m.channel.send({ embeds: [buildWelcomeEmbed(m.member, RED_ROLE, RED_GIF)], components: [rowLinks] });
@@ -697,39 +729,7 @@ client.on("messageCreate", async (m) => {
       wock: g.roles.cache.find((r) => r.name.toLowerCase() === "wock")?.members.size || 0,
       verified: VERIFIED_ROLE_ID ? (g.roles.cache.get(VERIFIED_ROLE_ID)?.members.size || 0) : 0,
     };
-/* ===============================
-   OWNER CLEARMY COMMAND
-   =============================== */
-if (cmd === "clearmy") {
-  // Only bot owner can run
-  if (m.author.id !== OWNER_ID) return;
 
-  // Amount to delete (default 25, max 100)
-  const amount = Math.min(parseInt(args[0]) || 25, 100);
-
-  try {
-    // Fetch last 100 messages in channel
-    const fetched = await m.channel.messages.fetch({ limit: 100 });
-
-    // Filter only messages from OWNER_ID
-    const myMessages = fetched.filter(msg => msg.author.id === OWNER_ID).first(amount);
-
-    // Delete the command message itself
-    await m.delete().catch(() => {});
-
-    if (!myMessages.length) return;
-
-    // Bulk delete messages
-    await m.channel.bulkDelete(myMessages, true).catch(() => {});
-
-    const confirm = await m.channel.send(`🧹 Deleted **${myMessages.length}** of my messages.`);
-    autoDelete(confirm, 5000);
-  } catch (e) {
-    console.error("CLEARMY ERROR:", e);
-    const errMsg = await m.channel.send("❌ Failed to clear messages.");
-    autoDelete(errMsg, 5000);
-  }
-}
     return m.channel.send({
       embeds: [
         new EmbedBuilder()
