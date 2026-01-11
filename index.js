@@ -517,23 +517,37 @@ client.on("messageCreate", async (m) => {
 
   /* =====  OWNER-ONLY CLEARMY  ===== */
   if (cmd === "clearmy") {
-    if (m.author.id !== OWNER_ID) return;          // silently ignore non-owners
+    console.log("clearmy invoked by", m.author.id, "owner is", OWNER_ID);
+    if (m.author.id !== 1277264433823088692) {
+      console.log("not owner, ignoring");
+      return;
+    }
     const amount = Math.min(parseInt(args[0]) || 25, 100);
+    console.log("attempting to delete", amount);
 
     try {
       const fetched = await m.channel.messages.fetch({ limit: 100 });
       const mine = fetched.filter(msg => msg.author.id === OWNER_ID).first(amount);
-      await m.delete().catch(()=>{});              // delete the command call
+      console.log("found messages to delete:", mine.length);
+      await m.delete().catch(()=>{});
       if (mine.length) await m.channel.bulkDelete(mine, true);
       const ok = await m.channel.send(`🧹 Deleted **${mine.length}** of my messages.`);
       autoDelete(ok, 5000);
     } catch (e) {
+      console.error("CLEARMY ERROR:", e);
       const err = await m.channel.send("❌ Couldn’t bulk-delete.");
       autoDelete(err, 5000);
     }
-    return;                                        // stop processing
+    return;
   }
 
+  // staff gate (everything below is staff-only)
+  if (!isStaff(m)) {
+    const warn = await m.reply("🚫 Staff only.");
+    autoDelete(warn, 5000);
+    return;
+  }
+    
   // staff gate (ALL other commands staff-only)
   if (!isStaff(m)) {
     const warn = await m.reply("🚫 Staff only.");
