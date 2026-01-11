@@ -1,5 +1,3 @@
-Here’s the original keep everything the same just add what I said to add 
-
 /*  WOCKHARDT-BOT v2 – Bleed-style, KEYLESS + Railway-safe (no FFmpeg required by default)
     Prefix: - | discord.js v14
 
