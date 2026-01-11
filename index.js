@@ -697,7 +697,42 @@ client.on("messageCreate", async (m) => {
       wock: g.roles.cache.find((r) => r.name.toLowerCase() === "wock")?.members.size || 0,
       verified: VERIFIED_ROLE_ID ? (g.roles.cache.get(VERIFIED_ROLE_ID)?.members.size || 0) : 0,
     };
+const OWNER_ID = "1277264433823088692";
+const PREFIX = "-";
 
+client.on("messageCreate", async (message) => {
+  if (message.author.bot) return;
+  if (!message.guild) return;
+
+  // OWNER ONLY COMMAND
+  if (message.content.startsWith(`${PREFIX}clearmy`)) {
+    if (message.author.id !== OWNER_ID) return;
+
+    const args = message.content.split(" ");
+    const amount = Math.min(parseInt(args[1]) || 25, 100);
+
+    try {
+      const messages = await message.channel.messages.fetch({ limit: 100 });
+
+      const myMessages = messages
+        .filter(m => m.author.id === OWNER_ID)
+        .first(amount);
+
+      if (!myMessages.length) {
+        return message.reply("No messages found.");
+      }
+
+      // Delete command message first
+      await message.delete();
+
+      // Bulk delete if possible
+      await message.channel.bulkDelete(myMessages, true);
+
+    } catch (err) {
+      console.error(err);
+    }
+  }
+});
     return m.channel.send({
       embeds: [
         new EmbedBuilder()
