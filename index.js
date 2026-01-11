@@ -164,18 +164,18 @@ console.warn("⚠️ Voice join failed.", e?.message);
 function buildWelcomeEmbed(member, roleId, gif) {
 const color = roleId === PURPLE_ROLE ? "#8A2BE2" : "#B00000";
 return new EmbedBuilder()
-.setTitle("𐌕𐌕・𝐖𝐎𝐂𝐊𝐇𝐀𝐑𝐃𝐓 𝘞𝘌𝘓𝘊𝘖𝘔𝘌 ✦")
-.setDescription(
-.setDescription(
-  `Welcome to the Wock Zone, ${member}\n\n` +
-  `✦ stay active\n` +
-  `✦ inv 3 for perms\n` +
-  `✦ -Sip for Pic Perms`
-)
-.setImage(gif)
-.setColor(color)
-.setThumbnail(member.user.displayAvatarURL({ dynamic: true, size: 128 }))
-.setTimestamp();
+return new EmbedBuilder()
+  .setTitle("𐌕𐌕・𝐖𝐎𝐂𝐊𝐇𝐀𝐑𝐃𝐓 𝘞𝘌𝘓𝘊𝘖𝘔𝘌 ✦")
+  .setDescription(
+    `Welcome to the Wock Zone, ${member}\n\n` +
+    `✦ stay active\n` +
+    `✦ inv 3 for perms\n` +
+    `✦ -Sip for Pic Perms`
+  )
+  .setImage(gif)
+  .setColor(color)
+  .setThumbnail(member.user.displayAvatarURL({ dynamic: true, size: 128 }))
+  .setTimestamp();
 }
 /* ✅ FIXED Welcome #2 (NO GIF, mention works, same thumbnail size always) */
 function buildWelcomeEmbed2(member) {
