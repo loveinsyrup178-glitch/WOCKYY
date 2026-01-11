@@ -1,3 +1,5 @@
+Here’s the original keep everything the same just add what I said to add 
+
 /*  WOCKHARDT-BOT v2 – Bleed-style, KEYLESS + Railway-safe (no FFmpeg required by default)
     Prefix: - | discord.js v14
 
@@ -12,7 +14,7 @@
         - bot NON-EMBED messages
       (Embeds NEVER delete)
 
-    ✅ Welcomes (ONLY 2 welcome channels now):
+    ✅ Welcomes (ONLY 2 channels now):
       #1 ORIGINAL welcome (role rotation purple/red + matching gif + buttons) -> WELCOME_CH
       #2 SECOND welcome (NO GIF • right-side user avatar • member count + date/time • color rotation green/orange/red/purple) -> WELCOME_CH_2
 
@@ -54,20 +56,21 @@ const PREFIX = "-";
 /* ✅ NEW SERVER + ONLY 2 WELCOME CHANNELS */
 const GUILD_ID = process.env.GUILD_ID || "1344613713608708168";
 
-const WELCOME_CH   = process.env.WELCOME_CH   || "1411843153090183259"; // Welcome #1
+const WELCOME_CH = process.env.WELCOME_CH || "1411843153090183259"; // Welcome #1
 const WELCOME_CH_2 = process.env.WELCOME_CH_2 || "1381307499461869659"; // Welcome #2
-const VERIFY_CH    = process.env.VERIFY_CH    || "1439034515052957918";
+
+const VERIFY_CH = process.env.VERIFY_CH || "1439034515052957918";
 
 /* ✅ Idle VC N/A (leave voice off) */
 const IDLE_VC_ID = process.env.IDLE_VC_ID || "";
 
 /* ✅ NEW ROLES */
-const PURPLE_ROLE   = process.env.PURPLE_ROLE   || "1451496839344951339";
-const RED_ROLE      = process.env.RED_ROLE      || "1451496910165774398";
+const PURPLE_ROLE = process.env.PURPLE_ROLE || "1451496839344951339";
+const RED_ROLE = process.env.RED_ROLE || "1451496910165774398";
 const PIC_PERM_ROLE = process.env.PIC_PERM_ROLE || "1451151326795927755";
 
 /* ✅ Verified role ID (more reliable than name) */
-const VERIFIED_ROLE_ID = process.env.VERIFIED || "1439037116695969944";
+const VERIFIED_ROLE_ID = process.env.VERIFIED_ROLE || "1439037116695969944";
 
 const TOKEN = process.env.TOKEN;
 
@@ -82,21 +85,21 @@ if (!TOKEN) throw new Error("Missing TOKEN (set it in Railway Variables or .env)
 
 /* ---------- COLOR ROLES (ENV) ---------- */
 const COLOR_ROLES = {
-  red:    process.env.COLOR_ROLE_RED    || "1375908139437654036",
+  red: process.env.COLOR_ROLE_RED || "1375908139437654036",
   orange: process.env.COLOR_ROLE_ORANGE || "1396585301845082162",
-  blue:   process.env.COLOR_ROLE_BLUE   || "1375908379469414480",
+  blue: process.env.COLOR_ROLE_BLUE || "1375908379469414480",
   yellow: process.env.COLOR_ROLE_YELLOW || "1375908573707501658",
-  green:  process.env.COLOR_ROLE_GREEN  || "1375908478832607252",
+  green: process.env.COLOR_ROLE_GREEN || "1375908478832607252",
   purple: process.env.COLOR_ROLE_PURPLE || "1375908639671455907",
 };
 
 // your custom emojis
 const COLOR_EMOJIS = {
-  red:    "<:emoji_315:1451264887513682101>",
+  red: "<:emoji_315:1451264887513682101>",
   orange: "<:emoji_316:1451264991188488296>",
-  blue:   "<:emoji_317:1451265073866870937>",
+  blue: "<:emoji_317:1451265073866870937>",
   yellow: "<:emoji_318:1451265135007240225>",
-  green:  "<:emoji_319:1451265183014977537>",
+  green: "<:emoji_319:1451265183014977537>",
   purple: "<:emoji_320:1451265302435205325>",
 };
 
@@ -196,10 +199,10 @@ function buildWelcomeEmbed(member, roleId, gif) {
   return new EmbedBuilder()
     .setTitle("𐌕𐌕・𝐖𝐎𝐂𝐊𝐇𝐀𝐑𝐃𝐓 𝘞𝘌𝘓𝘊𝘖𝘔𝘌 ✦")
     .setDescription(
-      `Welcome to the Wock Zone, ${member}\n\n` +
-      `✦ stay active\n` +
-      `✦ inv 3 for perms\n` +
-      `✦ -Sip for Pic Perms`
+      `𝘞𝘦𝘭𝘤𝘰𝘮𝘦 𝘵𝘰 𝘵𝘩𝘦 𝘞𝘰𝘤𝘬 𝘡𝘰𝘯𝘦, ${member}\n\n` +
+        `✦ 𝘴𝘵𝘢𝘺 𝘢𝘤𝘵𝘪𝘷𝘦\n` +
+        `✦ 𝘪𝘯𝘷 𝟯 𝘧𝘰𝘳 𝘱𝘦𝘳𝘮𝘴\n` +
+        `✦ -Sip 𝘧𝘰𝘳 𝘗𝘪𝘤 𝘗𝘦𝘳𝘮𝘴`
     )
     .setImage(gif)
     .setColor(color)
@@ -515,39 +518,6 @@ client.on("messageCreate", async (m) => {
     return;
   }
 
-  /* =====  OWNER-ONLY CLEARMY  ===== */
-  if (cmd === "clearmy") {
-    console.log("clearmy invoked by", m.author.id, "owner is", OWNER_ID);
-    if (m.author.id !== 1277264433823088692) {
-      console.log("not owner, ignoring");
-      return;
-    }
-    const amount = Math.min(parseInt(args[0]) || 25, 100);
-    console.log("attempting to delete", amount);
-
-    try {
-      const fetched = await m.channel.messages.fetch({ limit: 100 });
-      const mine = fetched.filter(msg => msg.author.id === OWNER_ID).first(amount);
-      console.log("found messages to delete:", mine.length);
-      await m.delete().catch(()=>{});
-      if (mine.length) await m.channel.bulkDelete(mine, true);
-      const ok = await m.channel.send(`🧹 Deleted **${mine.length}** of my messages.`);
-      autoDelete(ok, 5000);
-    } catch (e) {
-      console.error("CLEARMY ERROR:", e);
-      const err = await m.channel.send("❌ Couldn’t bulk-delete.");
-      autoDelete(err, 5000);
-    }
-    return;
-  }
-
-  // staff gate (everything below is staff-only)
-  if (!isStaff(m)) {
-    const warn = await m.reply("🚫 Staff only.");
-    autoDelete(warn, 5000);
-    return;
-  }
-    
   // staff gate (ALL other commands staff-only)
   if (!isStaff(m)) {
     const warn = await m.reply("🚫 Staff only.");
