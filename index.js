@@ -166,7 +166,7 @@ const color = roleId === PURPLE_ROLE ? "#8A2BE2" : "#B00000";
 return new EmbedBuilder()
 .setTitle("𐌕𐌕・𝐖𝐎𝐂𝐊𝐇𝐀𝐑𝐃𝐓 𝘞𝘌𝘓𝘊𝘖𝘔𝘌 ✦")
 .setDescription(
-𝘞𝘦𝘭𝘤𝘰𝘮𝘦 𝘵𝘰 𝘵𝘩𝘦 𝘞𝘰𝘤𝘬 𝘡𝘰𝘯𝘦, ${member}\n\n +
+`Welcome to the Wock Zone, ${member}\n\n` +
 ✦ 𝘴𝘵𝘢𝘺 𝘢𝘤𝘵𝘪𝘷𝘦\n +
 ✦ 𝘪𝘯𝘷 𝟯 𝘧𝘰𝘳 𝘱𝘦𝘳𝘮𝘴\n +
 ✦ -Sip 𝘧𝘰𝘳 𝘗𝘪𝘤 𝘗𝘦𝘳𝘮𝘴
