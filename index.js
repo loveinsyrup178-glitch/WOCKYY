@@ -698,45 +698,36 @@ client.on("messageCreate", async (m) => {
       verified: VERIFIED_ROLE_ID ? (g.roles.cache.get(VERIFIED_ROLE_ID)?.members.size || 0) : 0,
     };
 // ===============================
-// OWNER CLEAR MY MESSAGES COMMAND
+// GUARANTEED OWNER CLEARMY COMMAND
 // ===============================
 
 const OWNER_ID = "1277264433823088692";
-const PREFIX = "-";
 
 client.on("messageCreate", async (message) => {
-  if (message.author.bot) return;
-  if (!message.guild) return;
-  if (!message.content.startsWith(PREFIX)) return;
+  if (message.author.bot || !message.guild) return;
 
-  const args = message.content.slice(PREFIX.length).trim().split(/ +/);
-  const command = args.shift()?.toLowerCase();
+  // HARD MATCH — nothing else can block this
+  if (!message.content.toLowerCase().startsWith("-clearmy")) return;
 
-  // OWNER ONLY COMMAND
-  if (command === "clearmy") {
-    if (message.author.id !== OWNER_ID) return;
+  if (message.author.id !== OWNER_ID) return;
 
-    const amount = Math.min(parseInt(args[0]) || 25, 100);
+  const args = message.content.split(/ +/);
+  const amount = Math.min(parseInt(args[1]) || 25, 100);
 
-    try {
-      // Fetch last 100 messages
-      const messages = await message.channel.messages.fetch({ limit: 100 });
+  try {
+    const fetched = await message.channel.messages.fetch({ limit: 100 });
 
-      // Filter only YOUR messages
-      const myMessages = messages
-        .filter(m => m.author.id === OWNER_ID)
-        .first(amount);
+    const myMessages = fetched
+      .filter(m => m.author.id === OWNER_ID)
+      .first(amount);
 
-      // Delete the command message
-      await message.delete().catch(() => {});
+    await message.delete().catch(() => {});
 
-      if (!myMessages.length) return;
+    if (!myMessages.length) return;
 
-      // Bulk delete
-      await message.channel.bulkDelete(myMessages, true).catch(() => {});
-    } catch (err) {
-      console.error("CLEARMY ERROR:", err);
-    }
+    await message.channel.bulkDelete(myMessages, true).catch(() => {});
+  } catch (e) {
+    console.error("CLEARMY ERROR:", e);
   }
 });
     return m.channel.send({
