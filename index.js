@@ -55,7 +55,7 @@ const PREFIX = "-";
 const GUILD_ID = process.env.GUILD_ID || "1344613713608708168";
 
 const WELCOME_CH = process.env.WELCOME_CH || "1411843153090183259"; // Welcome #1
-const WELCOME_CH_2 = process.env.WELCOME_CH_2 || "1381307499461869659"; // Welcome #2
+const WELCOME_CH_2 = process.env.WELCOME_CH_2 || "1462129400895115536"; // Welcome #2
 
 const VERIFY_CH = process.env.VERIFY_CH || "1439034515052957918";
 
