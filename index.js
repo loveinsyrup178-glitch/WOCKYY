@@ -29,6 +29,12 @@
       -colors / -testcolors => posts luxury Color Roles embed + buttons
       Buttons auto-swap (one color at a time)
       NO embed color bar (no .setColor on color panel)
+
+    ✅ NEW DM COMMANDS (STAFF ONLY):
+      -dm <message> => DM ALL server members
+      -dmhere <message> => DM everyone in your VC
+      -dmuser @name <message> => DM one user
+      -dmcancel => Cancel active bulk DM
 */
 
 require("dotenv").config();
@@ -120,6 +126,12 @@ if (ENABLE_VOICE) {
     voice = null;
   }
 }
+
+/* ---------- DM CONFIG ---------- */
+const DM_DELAY_MS = parseInt(process.env.DM_DELAY_MS) || 1500;
+const DM_BATCH_SIZE = parseInt(process.env.DM_BATCH_SIZE) || 100;
+const DM_CONCURRENT = parseInt(process.env.DM_CONCURRENT) || 3;
+const DM_RETRY_MAX = 3;
 
 /* ---------- CLIENT ---------- */
 const client = new Client({
@@ -273,7 +285,7 @@ function buildWockhardtVerifyEmbed2() {
         "",
         "• Join a private VC with staff and turn your camera on",
         "• OR take a selfie holding paper that says:",
-        "  WOCKHARDT / your username / today’s date",
+        "  WOCKHARDT / your username / today's date",
         "",
         "↳ Open a ticket below",
         "",
@@ -384,7 +396,7 @@ const WELCOME3_COLORS = [
 
 const PICKUPS = [
   "Are you a double cup? cos I wanna hold you all night",
-  "Is your name Wock? cos I’m tryna pour into you",
+  "Is your name Wock? cos I'm tryna pour into you",
 ];
 
 const EIGHT = [
@@ -411,6 +423,99 @@ const COMPLIMENTS = [
 client.snipe = new Map();
 client.editSnipe = new Map();
 client.afk = new Map();
+
+/* ---------- DM UTILS ---------- */
+const activeDMJobs = new Map();
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+function formatTime(ms) {
+  const s = Math.floor(ms / 1000);
+  const m = Math.floor(s / 60);
+  const h = Math.floor(m / 60);
+  if (h > 0) return `${h}h ${m % 60}m`;
+  if (m > 0) return `${m}m ${s % 60}s`;
+  return `${s}s`;
+}
+
+async function sendDMWithRetry(user, content, retries = 0) {
+  try {
+    await user.send(content);
+    return { success: true };
+  } catch (err) {
+    if (err.code === 50007) return { closed: true };
+    if (err.code === 429) {
+      const wait = (err.retry_after || 5) * 1000;
+      await sleep(wait);
+      if (retries < DM_RETRY_MAX) return sendDMWithRetry(user, content, retries + 1);
+      return { rateLimited: true };
+    }
+    if (retries < DM_RETRY_MAX) {
+      await sleep(2000);
+      return sendDMWithRetry(user, content, retries + 1);
+    }
+    return { failed: true, error: err.message };
+  }
+}
+
+async function sendMassDMFast(member, targets, messageContent, replyMsg, jobId) {
+  let success = 0, failed = 0, dmsClosed = 0, rateLimited = 0;
+  const total = targets.length;
+  const startTime = Date.now();
+  let processed = 0;
+
+  activeDMJobs.set(jobId, { total, success, failed, dmsClosed, active: true });
+
+  for (let i = 0; i < total; i += DM_CONCURRENT) {
+    if (!activeDMJobs.get(jobId)?.active) {
+      await replyMsg.edit(`🛑 Cancelled. ✅ ${success} | 🔒 ${dmsClosed} | ❌ ${failed} | ⏳ ${rateLimited}`);
+      activeDMJobs.delete(jobId);
+      return;
+    }
+
+    const batch = targets.slice(i, i + DM_CONCURRENT);
+    const results = await Promise.all(
+      batch.map(async (target) => {
+        if (target.bot) return null;
+        await sleep(DM_DELAY_MS * (batch.indexOf(target)));
+        return sendDMWithRetry(target, messageContent);
+      })
+    );
+
+    for (const r of results) {
+      if (!r) continue;
+      processed++;
+      if (r.success) success++;
+      else if (r.closed) dmsClosed++;
+      else if (r.rateLimited) rateLimited++;
+      else failed++;
+    }
+
+    if (processed % DM_BATCH_SIZE === 0 || i + DM_CONCURRENT >= total) {
+      const elapsed = Date.now() - startTime;
+      const avg = elapsed / processed;
+      const eta = avg * (total - processed);
+      const bar = "█".repeat(Math.floor(processed / total * 10)) + "░".repeat(10 - Math.floor(processed / total * 10));
+
+      await replyMsg.edit(
+        `📨 **Bulk DM** [${bar}] **${processed}/${total}**\n` +
+        `✅ ${success} | 🔒 ${dmsClosed} | ⏳ ${rateLimited} | ❌ ${failed}\n` +
+        `⏱️ ${formatTime(elapsed)} elapsed | ~${formatTime(eta)} left`
+      ).catch(() => {});
+    }
+
+    await sleep(500);
+  }
+
+  activeDMJobs.delete(jobId);
+  const elapsed = Date.now() - startTime;
+
+  await replyMsg.edit(
+    `✅ **Done!** ${total} processed\n` +
+    `✅ Sent: **${success}** | 🔒 Closed: **${dmsClosed}** | ⏳ Rate limited: **${rateLimited}** | ❌ Failed: **${failed}**\n` +
+    `⏱️ Total: ${formatTime(elapsed)} | Speed: ~${(total / (elapsed / 1000)).toFixed(1)} msgs/sec`
+  );
+}
 
 /* ---------- READY ---------- */
 client.once("ready", async () => {
@@ -483,7 +588,7 @@ client.on("messageUpdate", (oldMsg, newMsg) => {
 client.on("messageCreate", async (m) => {
   if (m.author.bot) return;
 
-  // Ignore typed /commands unless it’s from OWNER (optional)
+  // Ignore typed /commands unless it's from OWNER (optional)
   if (m.content.startsWith("/") && OWNER_ID && m.author.id !== OWNER_ID) return;
 
   if (!m.content.startsWith(PREFIX)) return;
@@ -520,6 +625,130 @@ client.on("messageCreate", async (m) => {
   if (!isStaff(m)) {
     const warn = await m.reply("🚫 Staff only.");
     autoDelete(warn, 5000);
+    return;
+  }
+
+  /* ----- DM COMMANDS (NEW) ----- */
+  // DM ONE USER — supports @mention or user ID
+  if (cmd === "dmuser") {
+    const fullArgs = m.content.slice(PREFIX.length + "dmuser ".length).trim();
+    const mentionMatch = m.mentions.users.first();
+    let targetUser = null;
+    let messageContent = "";
+
+    if (mentionMatch) {
+      targetUser = mentionMatch;
+      messageContent = fullArgs.replace(/<@!?(\d+)>/g, "").trim();
+    } else {
+      const idMatch = fullArgs.match(/^(\d{17,20})\s+(.+)$/s);
+      if (!idMatch) {
+        const r = await m.reply("Usage: `-dmuser @username message` or `-dmuser 1234567890123456789 message`");
+        autoDelete(r, 5000);
+        return;
+      }
+      const [, userId, msgText] = idMatch;
+      try {
+        targetUser = await client.users.fetch(userId);
+        messageContent = msgText;
+      } catch {
+        const r = await m.reply("❌ User not found.");
+        autoDelete(r, 5000);
+        return;
+      }
+    }
+
+    if (!messageContent) {
+      const r = await m.reply("❌ Message cannot be empty.");
+      autoDelete(r, 5000);
+      return;
+    }
+
+    const result = await sendDMWithRetry(targetUser, messageContent);
+    
+    if (result.success) {
+      const r = await m.reply(`✅ DM sent to **${targetUser.tag}**`);
+      autoDelete(r, 5000);
+    } else if (result.closed) {
+      const r = await m.reply(`🔒 **${targetUser.tag}** has DMs closed.`);
+      autoDelete(r, 5000);
+    } else if (result.rateLimited) {
+      const r = await m.reply(`⏳ Rate limited. Try again in a minute.`);
+      autoDelete(r, 5000);
+    } else {
+      const r = await m.reply(`❌ Failed to DM **${targetUser.tag}**`);
+      autoDelete(r, 5000);
+    }
+    return;
+  }
+
+  // DM ALL MEMBERS
+  if (cmd === "dm") {
+    const messageContent = m.content.slice(PREFIX.length + "dm ".length).trim();
+    if (!messageContent) {
+      const r = await m.reply("Usage: `-dm <message>`");
+      autoDelete(r, 5000);
+      return;
+    }
+
+    const statusMsg = await m.reply(`🔍 Fetching members...`);
+
+    try { await m.guild.members.fetch(); } catch (e) { console.log("Fetch error:", e); }
+
+    const targets = m.guild.members.cache.map(mm => mm).filter(mm => !mm.bot);
+    if (targets.length === 0) {
+      await statusMsg.edit("❌ No members found.");
+      return;
+    }
+
+    const estimatedTime = targets.length * (DM_DELAY_MS + 500 / DM_CONCURRENT);
+
+    await statusMsg.edit(
+      `🚀 **DMing ${targets.length} members**\n` +
+      `⏱️ ETA: ~${formatTime(estimatedTime)} | Concurrent: ${DM_CONCURRENT} | Delay: ${DM_DELAY_MS}ms`
+    );
+
+    const jobId = `${m.author.id}-${Date.now()}`;
+    sendMassDMFast(m.member, targets, messageContent, statusMsg, jobId);
+    return;
+  }
+
+  // DM VC MEMBERS
+  if (cmd === "dmhere") {
+    const messageContent = m.content.slice(PREFIX.length + "dmhere ".length).trim();
+    if (!messageContent) {
+      const r = await m.reply("Usage: `-dmhere <message>`");
+      autoDelete(r, 5000);
+      return;
+    }
+
+    const vc = m.member.voice?.channel;
+    if (!vc) {
+      const r = await m.reply("❌ Join a VC first.");
+      autoDelete(r, 5000);
+      return;
+    }
+
+    const targets = vc.members.map(mm => mm).filter(mm => !mm.bot);
+    if (targets.length === 0) {
+      const r = await m.reply("❌ Empty VC.");
+      autoDelete(r, 5000);
+      return;
+    }
+
+    const statusMsg = await m.reply(`📨 DMing ${targets.length} members...`);
+    const jobId = `${m.author.id}-${Date.now()}`;
+    sendMassDMFast(m.member, targets, messageContent, statusMsg, jobId);
+    return;
+  }
+
+  // CANCEL DM JOB
+  if (cmd === "dmcancel") {
+    let cancelled = 0;
+    for (const [jobId, job] of activeDMJobs) {
+      if (jobId.startsWith(m.author.id)) { job.active = false; cancelled++; }
+    }
+    const r = await m.reply(cancelled > 0 ? `🛑 Cancelled **${cancelled}** job(s).` : "❌ No active jobs.");
+    autoDelete(r, 5000);
     return;
   }
 
@@ -740,7 +969,7 @@ client.on("messageCreate", async (m) => {
   if (cmd === "quote") {
     const q = await fetch("https://type.fit/api/quotes").then((r) => r.json()).catch(() => []);
     const pick = q?.length ? rand(q) : { text: "Stay solid.", author: "WOCK" };
-    const r = await m.reply(`“${pick.text}” — ${pick.author || "Unknown"}`);
+    const r = await m.reply(`"${pick.text}" — ${pick.author || "Unknown"}`);
     autoDelete(r, 5000);
     return;
   }
@@ -803,7 +1032,7 @@ client.on("messageCreate", async (m) => {
     }
     const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text.join(" "))}&langpair=${from}|${to}`;
     const data = await fetch(url).then((r) => r.json()).catch(() => null);
-    const r = await m.reply(data?.responseData?.translatedText || "couldn’t translate that rn");
+    const r = await m.reply(data?.responseData?.translatedText || "couldn't translate that rn");
     autoDelete(r, 5000);
     return;
   }
@@ -885,7 +1114,7 @@ client.on("messageCreate", async (m) => {
     }
     const data = await fetch(`https://api.shrtco.de/v2/shorten?url=${encodeURIComponent(url)}`).then((r) => r.json()).catch(() => null);
     if (!data?.ok) {
-      const r = await m.reply("couldn’t shorten that");
+      const r = await m.reply("couldn't shorten that");
       autoDelete(r, 5000);
       return;
     }
@@ -1183,6 +1412,7 @@ client.on("messageCreate", async (m) => {
               `**Info (Staff):** -serverinfo -userinfo -avatar -emoji -servericon -channelinfo`,
               `**Mod (Staff):** -clear -say -embed -mute -unmute -slowmode -lock -unlock`,
               `**Snipes (Staff):** -afk -snipe -editsnipe`,
+              `**DM (Staff):** -dm <message> -dmhere <message> -dmuser @name <message> -dmcancel`,
               `**Note:** Verify + color buttons are public • Embeds never delete`,
             ].join("\n")
           ),
